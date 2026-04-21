@@ -1,0 +1,46 @@
+name: flutter_application_1
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_native_splash: ^2.4.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+# Konfigurasi Native Splash Screen (Statis)
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/logomajadigi1.png"
+  android: true
+  ios: true
+  web: false
+
+flutter:
+  uses-material-design: true
+
+  # Mendaftarkan Aset Gambar
+  assets:
+    - assets/logomajadigi1.png
+
+  # Mendaftarkan Font Poppins
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: fonts/Poppins-Light.ttf
+          weight: 300
+        - asset: fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: fonts/Poppins-Bold.ttf
+          weight: 700
