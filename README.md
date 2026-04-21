@@ -1,6 +1,6 @@
-# flutter_application_1
+# PROJEK MAJADIGI
 
-Project Flutter untuk CAPSTONE PROJECT UNIVERSITAS BRAWIJAYA
+Projek Flutter untuk CAPSTONE PROJECT UNIVERSITAS BRAWIJAYA
 
 ## Deskripsi:
 
