@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'visitor.dart'; // Mengimpor file visitor yang baru dibuat
 
 void main() {
-  // Menahan Splash Screen asli sampai Flutter siap
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
@@ -18,7 +18,6 @@ class MyApp extends StatelessWidget {
       title: 'Majadigi App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Mengatur Poppins sebagai font utama aplikasi
         fontFamily: 'Poppins',
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0055CC)),
         useMaterial3: true,
@@ -46,28 +45,23 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
   }
 
   void _startAnimation() async {
-    // 1. Hilangkan Native Splash (statis)
     FlutterNativeSplash.remove();
-
-    // 2. Jeda agar user bisa melihat logo dan teks footer sejenak
     await Future.delayed(const Duration(milliseconds: 800));
 
-    // 3. Jalankan animasi scaling biru dan fade out konten
     if (mounted) {
       setState(() {
-        _blueBoxScale = 15.0; // Melebar memenuhi seluruh layar
-        _contentOpacity = 0.0; // Logo dan teks memudar
+        _blueBoxScale = 15.0;
+        _contentOpacity = 0.0;
       });
     }
 
-    // 4. Tunggu animasi selesai, lalu pindah ke halaman Home
     await Future.delayed(const Duration(milliseconds: 900));
     if (mounted) {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => 
-              const MyHomePage(title: 'Majadigi Home Page'),
+              const WelcomeScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -82,7 +76,6 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Lapisan 1: Background Biru yang membesar dari tengah
           Center(
             child: AnimatedScale(
               scale: _blueBoxScale,
@@ -98,25 +91,19 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
               ),
             ),
           ),
-          
-          // Lapisan 2: Konten (Logo & Text) yang memudar
           AnimatedOpacity(
             opacity: _contentOpacity,
             duration: const Duration(milliseconds: 600),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(), // Spacer atas
-                
-                // Logo Tengah
+                const SizedBox(),
                 Center(
                   child: Image.asset(
                     'assets/logomajadigi1.png',
                     width: 160,
                   ),
                 ),
-                
-                // Footer Text sesuai Figma
                 Padding(
                   padding: const EdgeInsets.only(bottom: 40.0),
                   child: Column(
@@ -125,7 +112,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
                         'Powered by',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w300, // Poppins Light
+                          fontWeight: FontWeight.w300,
                           color: Colors.black45,
                         ),
                       ),
@@ -134,7 +121,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
                         'Pemerintah Provinsi Jawa Timur',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w400, // Poppins Regular
+                          fontWeight: FontWeight.w400,
                           color: Colors.black87,
                         ),
                       ),
@@ -150,46 +137,123 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+class WelcomeScreen extends StatelessWidget {
+  const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset('assets/logomajadigi1.png', width: 120),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.language, size: 16),
+                        SizedBox(width: 4),
+                        Text('Bahasa Indonesia', 
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: Image.asset('assets/welcome_image.png', fit: BoxFit.cover),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Selamat Datang di\nMAJADIGI!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, height: 1.2),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Akses semua kebutuhan digital dalam satu genggaman. Cepat, aman, dan tanpa batas bersama Majadigi',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black54, height: 1.5),
+              ),
+              const SizedBox(height: 40),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0055CC),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: const Text('Masuk', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {},
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF0055CC),
+                        side: const BorderSide(color: Color(0xFF0055CC)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Daftar', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.black12)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('atau', style: TextStyle(color: Colors.black38, fontSize: 12)),
+                  ),
+                  Expanded(child: Divider(color: Colors.black12)),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    // Navigasi ke VisitorHomePage di visitor.dart
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const VisitorHomePage()),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Lewati', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }

@@ -31,6 +31,7 @@ flutter:
   # Mendaftarkan Aset Gambar
   assets:
     - assets/logomajadigi1.png
+    - assets/welcome_image.png
 
   # Mendaftarkan Font Poppins
   fonts:
