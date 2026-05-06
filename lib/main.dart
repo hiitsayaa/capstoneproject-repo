@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'visitor.dart'; // Mengimpor file visitor yang baru dibuat
+import 'visitor.dart'; // Menghubungkan ke halaman visitor
 
 void main() {
+  // Menahan Splash Screen asli sampai Flutter siap
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Majadigi App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'Poppins',
+        fontFamily: 'Poppins', // Menggunakan font Poppins sesuai spesifikasi
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0055CC)),
         useMaterial3: true,
       ),
@@ -50,8 +51,8 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
 
     if (mounted) {
       setState(() {
-        _blueBoxScale = 15.0;
-        _contentOpacity = 0.0;
+        _blueBoxScale = 15.0; // Animasi lingkaran biru membesar
+        _contentOpacity = 0.0; // Logo memudar
       });
     }
 
@@ -98,6 +99,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const SizedBox(),
+                // TETAP MENGGUNAKAN LOGO LAMA UNTUK SPLASH SCREEN
                 Center(
                   child: Image.asset(
                     'assets/logomajadigi1.png',
@@ -110,20 +112,12 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
                     children: const [
                       Text(
                         'Powered by',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w300,
-                          color: Colors.black45,
-                        ),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300, color: Colors.black45),
                       ),
                       SizedBox(height: 4),
                       Text(
                         'Pemerintah Provinsi Jawa Timur',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.black87,
-                        ),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87),
                       ),
                     ],
                   ),
@@ -150,10 +144,14 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
+              // HEADER DIUBAH MENGGUNAKAN LOGO HORIZONTAL BARU
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Image.asset('assets/logomajadigi1.png', width: 120),
+                  Image.asset(
+                    'assets/logomajadigitext.jpeg', 
+                    width: 135, // Ukuran disesuaikan agar proporsional
+                  ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -164,8 +162,7 @@ class WelcomeScreen extends StatelessWidget {
                       children: const [
                         Icon(Icons.language, size: 16),
                         SizedBox(width: 4),
-                        Text('Bahasa Indonesia', 
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400)),
+                        Text('Bahasa Indonesia', style: TextStyle(fontSize: 11)),
                       ],
                     ),
                   ),
@@ -235,7 +232,6 @@ class WelcomeScreen extends StatelessWidget {
                 width: double.infinity,
                 child: TextButton(
                   onPressed: () {
-                    // Navigasi ke VisitorHomePage di visitor.dart
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const VisitorHomePage()),
