@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'data_diri.dart';
+import 'pilih_bahasa.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -47,14 +49,24 @@ class AccountPage extends StatelessWidget {
               
               const Text('Keamanan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 10),
-              _buildMenuItem(Icons.person_outline, 'Data Diri'),
+              _buildMenuItem(Icons.person_outline, 'Data Diri', onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DataDiriPage()),
+                );
+              }),
               _buildMenuItem(Icons.lock_outline, 'Ubah Kata Sandi'),
               
               const SizedBox(height: 24),
               const Text('Informasi Lainnya', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 10),
               _buildMenuItem(Icons.settings_outlined, 'Tentang Jatim'),
-              _buildMenuItem(Icons.language_outlined, 'Ganti Bahasa'),
+              _buildMenuItem(Icons.language_outlined, 'Ganti Bahasa', onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PilihBahasaPage()),
+                );
+              }),
               _buildMenuItem(Icons.star_outline, 'Beri Rating'),
               _buildMenuItem(Icons.info_outline, 'Syarat & Ketentuan'),
               _buildMenuItem(Icons.privacy_tip_outlined, 'Kebijakan Privasi'),
@@ -98,7 +110,7 @@ class AccountPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title) {
+  Widget _buildMenuItem(IconData icon, String title, {VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -109,7 +121,7 @@ class AccountPage extends StatelessWidget {
         leading: Icon(icon, color: Colors.black87),
         title: Text(title, style: const TextStyle(fontSize: 14)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'visitor.dart'; // Menghubungkan ke halaman visitor
+import 'register.dart';
+import 'login.dart';
 
 void main() {
   // Menahan Splash Screen asli sampai Flutter siap
@@ -18,8 +21,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Majadigi App',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
       theme: ThemeData(
-        fontFamily: 'Poppins', // Menggunakan font Poppins sesuai spesifikasi
+        fontFamily: 'Poppins',
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0055CC)),
         useMaterial3: true,
       ),
@@ -190,7 +202,9 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0055CC),
                         foregroundColor: Colors.white,
@@ -204,7 +218,9 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage()));
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0055CC),
                         side: const BorderSide(color: Color(0xFF0055CC)),
