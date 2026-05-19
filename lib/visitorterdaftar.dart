@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'account.dart';
 import 'kelola_favorit.dart';
 import 'semua_layanan.dart';
+import 'klinik_hoaks.dart';
+import 'bapenda_jatim.dart';
 
 // Data model untuk layanan
 class LayananItem {
@@ -70,6 +72,14 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
     );
     if (result != null) {
       setState(() => _favoritIds = result);
+    }
+  }
+
+  void _navigateToLayanan(String id) {
+    if (id == 'klinik') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
+    } else if (id == 'bapenda') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
     }
   }
 
@@ -169,22 +179,25 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                     separatorBuilder: (_, __) => const SizedBox(width: 16),
                     itemBuilder: (context, index) {
                       final item = _favoritLayanan[index];
-                      return SizedBox(
-                        width: 72,
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 50, height: 50,
-                              decoration: BoxDecoration(
-                                color: item.iconColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(14),
+                      return GestureDetector(
+                        onTap: () => _navigateToLayanan(item.id),
+                        child: SizedBox(
+                          width: 72,
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 50, height: 50,
+                                decoration: BoxDecoration(
+                                  color: item.iconColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(item.icon, color: item.iconColor, size: 26),
                               ),
-                              child: Icon(item.icon, color: item.iconColor, size: 26),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(item.name, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w500)),
-                          ],
+                              const SizedBox(height: 6),
+                              Text(item.name, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -227,7 +240,12 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                     );
                   }
                   final item = _layananUmum[index];
-                  return _buildServiceTile(icon: item.icon, label: item.name, color: item.iconColor);
+                  return _buildServiceTile(
+                    icon: item.icon,
+                    label: item.name,
+                    color: item.iconColor,
+                    onTap: () => _navigateToLayanan(item.id),
+                  );
                 },
               ),
               const SizedBox(height: 24),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'account_visitor.dart';
 import 'login.dart';
+import 'klinik_hoaks.dart';
+import 'bapenda_jatim.dart';
 
 class VisitorHomePage extends StatelessWidget {
   const VisitorHomePage({super.key});
@@ -124,13 +126,17 @@ class VisitorHomePage extends StatelessWidget {
                 crossAxisCount: 4,
                 mainAxisSpacing: 20,
                 children: [
-                  _buildServiceIcon(context, 'Bapenda\nJatim', Icons.account_balance),
+                  _buildServiceIcon(context, 'Bapenda\nJatim', Icons.account_balance, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
+                  }),
                   _buildServiceIcon(context, 'Nomor\nDarurat', Icons.phone_in_talk),
                   _buildServiceIcon(context, 'Point\nJatim', Icons.stars),
                   _buildServiceIcon(context, 'Skrining E-\nTibi', Icons.medical_services),
                   _buildServiceIcon(context, 'Rsud Daha\nHusada', Icons.local_hospital),
                   _buildServiceIcon(context, 'Rsud Haji\nProv. Jatim', Icons.health_and_safety),
-                  _buildServiceIcon(context, 'RSUD Karsa\nHusada', Icons.local_hospital),
+                  _buildServiceIcon(context, 'Klinik\nHoaks', Icons.fact_check, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
+                  }),
                   _buildServiceIcon(context, 'Lainnya', Icons.more_horiz),
                 ],
               ),
@@ -168,9 +174,9 @@ class VisitorHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceIcon(BuildContext context, String label, IconData icon) {
+  Widget _buildServiceIcon(BuildContext context, String label, IconData icon, {VoidCallback? onTap}) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap ?? () {},
       child: Column(
         children: [
           Container(
