@@ -3,6 +3,7 @@ import 'account_visitor.dart';
 import 'login.dart';
 import 'klinik_hoaks.dart';
 import 'bapenda_jatim.dart';
+import 'islamic_center.dart';
 
 class VisitorHomePage extends StatelessWidget {
   const VisitorHomePage({super.key});
@@ -133,7 +134,9 @@ class VisitorHomePage extends StatelessWidget {
                   _buildServiceIcon(context, 'Point\nJatim', Icons.stars),
                   _buildServiceIcon(context, 'Skrining E-\nTibi', Icons.medical_services),
                   _buildServiceIcon(context, 'Rsud Daha\nHusada', Icons.local_hospital),
-                  _buildServiceIcon(context, 'Rsud Haji\nProv. Jatim', Icons.health_and_safety),
+                  _buildServiceIcon(context, 'Islamic\nCenter', Icons.mosque, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
+                  }),
                   _buildServiceIcon(context, 'Klinik\nHoaks', Icons.fact_check, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
                   }),

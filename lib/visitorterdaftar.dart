@@ -4,6 +4,7 @@ import 'kelola_favorit.dart';
 import 'semua_layanan.dart';
 import 'klinik_hoaks.dart';
 import 'bapenda_jatim.dart';
+import 'islamic_center.dart';
 
 // Data model untuk layanan
 class LayananItem {
@@ -80,6 +81,8 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
     } else if (id == 'bapenda') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
+    } else if (id == 'islamic') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
     }
   }
 

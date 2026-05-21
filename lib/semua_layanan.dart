@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'visitorterdaftar.dart';
+import 'islamic_center.dart';
+import 'klinik_hoaks.dart';
+import 'bapenda_jatim.dart';
 
 class SemuaLayananPage extends StatefulWidget {
   const SemuaLayananPage({super.key});
@@ -107,7 +110,15 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
                   title: Text(item.name, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600)),
                   subtitle: Text(item.subtitle, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF9CA3AF))),
                   trailing: const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
-                  onTap: () {},
+                  onTap: () {
+                    if (item.id == 'islamic') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
+                    } else if (item.id == 'klinik') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
+                    } else if (item.id == 'bapenda') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
+                    }
+                  },
                 );
               },
             ),
