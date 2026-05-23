@@ -245,7 +245,7 @@ class _IslamicCenterPageState extends State<IslamicCenterPage> {
               ],
             ),
           ),
-          if (trailing != null) trailing,
+          ?trailing,
         ],
       ),
     );

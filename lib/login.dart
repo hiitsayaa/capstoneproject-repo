@@ -213,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: OutlinedButton.icon(
                     onPressed: () {},
                     icon: Image.asset('assets/google_icon.png', width: 20, height: 20,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 24, color: Colors.red),
+                      errorBuilder: (_, _, _) => const Icon(Icons.g_mobiledata, size: 24, color: Colors.red),
                     ),
                     label: const Text('Login dengan Google', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 14)),
                     style: OutlinedButton.styleFrom(

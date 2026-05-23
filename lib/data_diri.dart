@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 
 class DataDiriPage extends StatefulWidget {
@@ -115,7 +116,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
                   TextField(
                     readOnly: true,
                     onTap: () async {
-                      DateTime? picked = await showDatePicker(
+                      await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime(1900),
@@ -199,7 +200,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
                   const Text('Pendidikan Terakhir', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF424656))),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _pendidikan,
+                    initialValue: _pendidikan,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,

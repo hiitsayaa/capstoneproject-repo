@@ -3,6 +3,17 @@ import 'visitorterdaftar.dart';
 import 'islamic_center.dart';
 import 'klinik_hoaks.dart';
 import 'bapenda_jatim.dart';
+import 'rsud_haji.dart';
+import 'rsud_haji_ketersediaan_kamar.dart';
+import 'skrining_tbc.dart';
+import 'sapa_bansos.dart';
+import 'point_jatim.dart';
+import 'rsud_karsa_husada.dart';
+import 'rsud_karsa_husada_ketersediaan_kamar.dart';
+import 'rsud_daha_husada.dart';
+import 'rsud_daha_husada_jadwal_operasi.dart';
+import 'rsud_daha_husada_antrian.dart';
+import 'nomor_darurat.dart';
 
 class SemuaLayananPage extends StatefulWidget {
   const SemuaLayananPage({super.key});
@@ -65,7 +76,7 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: _categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final cat = _categories[index];
                 final isSelected = _selectedCategory == cat;
@@ -94,7 +105,7 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               itemCount: _filtered.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
+              separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
               itemBuilder: (context, index) {
                 final item = _filtered[index];
                 return ListTile(
@@ -102,7 +113,7 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
                   leading: Container(
                     width: 44, height: 44,
                     decoration: BoxDecoration(
-                      color: item.iconColor.withOpacity(0.1),
+                      color: item.iconColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(item.icon, color: item.iconColor, size: 22),
@@ -117,6 +128,28 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
                     } else if (item.id == 'bapenda') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
+                    } else if (item.id == 'rsud_haji') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiPage()));
+                    } else if (item.id == 'info_kamar') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiKetersediaanKamarPage()));
+                    } else if (item.id == 'skrining') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SkriningTbcPage()));
+                    } else if (item.id == 'sapa_bansos') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SapaBansosPage()));
+                    } else if (item.id == 'point') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PointJatimPage()));
+                    } else if (item.id == 'rsud_karsa') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaPage()));
+                    } else if (item.id == 'ketersediaan') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaKetersediaanKamarPage()));
+                    } else if (item.id == 'rsud_daha') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaPage()));
+                    } else if (item.id == 'jadwal_op') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaJadwalOperasiPage()));
+                    } else if (item.id == 'antrian') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaAntrianPage()));
+                    } else if (item.id == 'darurat') {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NomorDaruratPage()));
                     }
                   },
                 );

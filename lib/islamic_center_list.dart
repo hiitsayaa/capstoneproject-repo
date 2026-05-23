@@ -49,7 +49,7 @@ class IslamicCenterListPage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.all(20),
         itemCount: data.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        separatorBuilder: (_, _) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
           final item = data[index];
           return _buildCard(context, item['title']!, item['capacity']!, item['price']!);

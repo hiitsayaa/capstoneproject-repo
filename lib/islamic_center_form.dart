@@ -147,12 +147,14 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
         const Text('Waktu', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
         Row(
           children: [
+            // ignore: deprecated_member_use
             Radio(value: 'Siang', groupValue: _waktu, onChanged: (v) => setState(() => _waktu = v.toString())),
             const Text('Siang (08.00 - 15.00)', style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
           ],
         ),
         Row(
           children: [
+            // ignore: deprecated_member_use
             Radio(value: 'Malam', groupValue: _waktu, onChanged: (v) => setState(() => _waktu = v.toString())),
             const Text('Malam (18.00 - 22.00)', style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
           ],
@@ -371,7 +373,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
     if (_currentStep == 3 && _showPaymentInstruction) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -400,7 +402,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
       child: SafeArea(
         child: SizedBox(
           width: double.infinity,

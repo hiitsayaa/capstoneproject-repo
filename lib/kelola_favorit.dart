@@ -76,7 +76,7 @@ class _KelolaFavoritPageState extends State<KelolaFavoritPage> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _favoritItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        separatorBuilder: (_, _) => const SizedBox(width: 12),
                         itemBuilder: (context, index) {
                           final item = _favoritItems[index];
                           return SizedBox(
@@ -86,7 +86,7 @@ class _KelolaFavoritPageState extends State<KelolaFavoritPage> {
                                 Container(
                                   width: 48, height: 48,
                                   decoration: BoxDecoration(
-                                    color: item.iconColor.withOpacity(0.1),
+                                    color: item.iconColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(item.icon, color: item.iconColor, size: 24),
@@ -160,7 +160,7 @@ class _KelolaFavoritPageState extends State<KelolaFavoritPage> {
                                 Container(
                                   width: 50, height: 50,
                                   decoration: BoxDecoration(
-                                    color: item.iconColor.withOpacity(0.1),
+                                    color: item.iconColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(14),
                                     border: isSelected ? Border.all(color: const Color(0xFF2979FF), width: 2) : null,
                                   ),

@@ -69,7 +69,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
                       width: 100,
                       height: 120,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         width: 100,
                         height: 120,
                         decoration: BoxDecoration(
@@ -452,7 +452,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
                 ],
               ),
             ),
-            if (trailing != null) trailing,
+            ?trailing,
           ],
         ),
       ),
@@ -496,7 +496,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: color, size: 20),

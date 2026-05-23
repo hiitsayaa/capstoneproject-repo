@@ -4,6 +4,9 @@ import 'login.dart';
 import 'klinik_hoaks.dart';
 import 'bapenda_jatim.dart';
 import 'islamic_center.dart';
+import 'point_jatim.dart';
+import 'rsud_karsa_husada.dart';
+import 'rsud_daha_husada.dart';
 
 class VisitorHomePage extends StatelessWidget {
   const VisitorHomePage({super.key});
@@ -130,10 +133,20 @@ class VisitorHomePage extends StatelessWidget {
                   _buildServiceIcon(context, 'Bapenda\nJatim', Icons.account_balance, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
                   }),
-                  _buildServiceIcon(context, 'Nomor\nDarurat', Icons.phone_in_talk),
-                  _buildServiceIcon(context, 'Point\nJatim', Icons.stars),
+                  _buildServiceIcon(context, 'Sapa\nBansos', Icons.volunteer_activism, onTap: () {
+                    // Requires login
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+                  }),
+                  _buildServiceIcon(context, 'Point\nJatim', Icons.stars, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PointJatimPage()));
+                  }),
                   _buildServiceIcon(context, 'Skrining E-\nTibi', Icons.medical_services),
-                  _buildServiceIcon(context, 'Rsud Daha\nHusada', Icons.local_hospital),
+                  _buildServiceIcon(context, 'RSUD Karsa\nHusada', Icons.local_hospital, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaPage()));
+                  }),
+                  _buildServiceIcon(context, 'RSUD Daha\nHusada', Icons.local_hospital, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaPage()));
+                  }),
                   _buildServiceIcon(context, 'Islamic\nCenter', Icons.mosque, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
                   }),
@@ -225,7 +238,7 @@ class VisitorHomePage extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: catColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(color: catColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                       child: Text(category, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: catColor, fontWeight: FontWeight.w600)),
                     ),
                     const SizedBox(width: 4),

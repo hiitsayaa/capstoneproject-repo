@@ -156,7 +156,7 @@ class _InfoNjkbPageState extends State<InfoNjkbPage> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           onChanged: onChanged,
           items: items.map((item) {
             return DropdownMenuItem(

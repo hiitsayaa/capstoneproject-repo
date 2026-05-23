@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'info_pkb.dart';
-import 'info_njkb.dart';
+import 'rsud_haji_ketersediaan_kamar.dart';
 
-class BapendaJatimPage extends StatefulWidget {
-  const BapendaJatimPage({super.key});
+class RsudHajiPage extends StatefulWidget {
+  const RsudHajiPage({super.key});
 
   @override
-  State<BapendaJatimPage> createState() => _BapendaJatimPageState();
+  State<RsudHajiPage> createState() => _RsudHajiPageState();
 }
 
-class _BapendaJatimPageState extends State<BapendaJatimPage> {
+class _RsudHajiPageState extends State<RsudHajiPage> {
   int _selectedTabIndex = 0;
 
   @override
@@ -21,7 +20,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Bapenda Jatim',
+          'RSUD Haji Prov. Jatim',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w600,
@@ -38,66 +37,59 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Section
+            // Header Section with Logo
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Logo Text (bapenda jatim)
-                  const Text(
-                    'bapenda',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1A1A1A),
-                      height: 1.1,
-                      letterSpacing: -1.5,
+                  const SizedBox(height: 8),
+                  // RSUD Haji Logo
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F7F0),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                  const Text(
-                    'jatim',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF9CA3AF),
-                      height: 0.9,
-                      letterSpacing: -1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Title
-                  const Text(
-                    'Badan Pendapatan Daerah\n(BAPENDA) Jawa Timur',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                      height: 1.3,
+                    child: const Icon(
+                      Icons.health_and_safety,
+                      color: Color(0xFF43A047),
+                      size: 60,
                     ),
                   ),
                   const SizedBox(height: 16),
 
+                  // Title
+                  const Text(
+                    'RSUD Haji Prov. Jatim',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   // Badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF2979FF)),
+                      border: Border.all(color: const Color(0xFF43A047)),
                     ),
                     child: const Text(
-                      'Badan Pendapatan Daerah',
+                      'Rumah Sakit Umum Daerah Haji Provinsi Jawa Timur',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF2979FF),
+                        color: Color(0xFF43A047),
                       ),
                     ),
                   ),
@@ -105,7 +97,8 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
 
                   // Description
                   const Text(
-                    'Lembaga pemerintah provinsi yang bertugas mengelola pendapatan daerah, khususnya pemungutan pajak kendaraan bermotor dan pajak provinsi lainnya',
+                    'Layanan kesehatan modern bernuansa Islami di Jawa Timur. Melayani dengan sepenuh hati, memadukan standar medis terbaik dan nilai-nilai islami dan spiritualitas.',
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
@@ -137,7 +130,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
               duration: const Duration(milliseconds: 300),
               child: _buildTabContent(),
             ),
-            
+
             const SizedBox(height: 32),
           ],
         ),
@@ -154,7 +147,8 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent,
+              color:
+                  isSelected ? const Color(0xFF1A1A1A) : Colors.transparent,
               width: 2,
             ),
           ),
@@ -165,7 +159,10 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
             fontFamily: 'Poppins',
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
+            color:
+                isSelected
+                    ? const Color(0xFF1A1A1A)
+                    : const Color(0xFF6B7280),
           ),
         ),
       ),
@@ -190,30 +187,24 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
   // ─────────────────────────────────────────────
   Widget _buildTabLayanan() {
     return Padding(
+      key: const ValueKey('layanan'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         children: [
           _buildLayananItem(
-            icon: Icons.receipt_long_outlined,
-            iconBgColor: const Color(0xFFE3F2FD),
-            iconColor: const Color(0xFF1565C0),
-            title: 'Info Pajak Kendaraan Bermotor\n(PKB)',
+            icon: Icons.bed_outlined,
+            iconBgColor: const Color(0xFFE8F5E9),
+            iconColor: const Color(0xFF43A047),
+            title: 'Info Kamar RSUD Haji',
             description:
-                'Lihat informasi Pajak Kendaraan Bermotor Anda dengan cepat dan mudah.',
+                'Lihat informasi ketersediaan kamar rawat inap',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const InfoPkbPage()));
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildLayananItem(
-            icon: Icons.directions_car_outlined,
-            iconBgColor: const Color(0xFFE3F2FD),
-            iconColor: const Color(0xFF1565C0),
-            title: 'Info Nilai Jual Kendaraan Bermotor\n(NJKB)',
-            description:
-                'Cek Nilai Jual Kendaraan Bermotor (NJKB) untuk estimasi pajak Anda.',
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const InfoNjkbPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RsudHajiKetersediaanKamarPage(),
+                ),
+              );
             },
           ),
         ],
@@ -291,6 +282,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
   // ─────────────────────────────────────────────
   Widget _buildTabOperasional() {
     return Padding(
+      key: const ValueKey('operasional'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         children: [
@@ -308,11 +300,14 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.language,
-                      color: Color(0xFF2979FF), size: 20),
+                  child: const Icon(
+                    Icons.language,
+                    color: Color(0xFF43A047),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -330,7 +325,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Kunjungi website resmi Bapenda Provinsi Jawa Timur',
+                        'Kunjungi website resmi RSUD Haji Provinsi Jawa Timur',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
@@ -340,8 +335,11 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right,
-                    color: Color(0xFF9CA3AF), size: 20),
+                const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF9CA3AF),
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -362,11 +360,14 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.location_on_outlined,
-                      color: Color(0xFF2979FF), size: 20),
+                  child: const Icon(
+                    Icons.location_on_outlined,
+                    color: Color(0xFF43A047),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -384,7 +385,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Jl. Manyar Kertoarjo No.1, Manyar Sabrangan, Kec. Mulyorejo, Surabaya, Jawa Timur 60116',
+                        'Jl. Manyar Kertoadi No.12, Klampis Ngasem, Kec. Sukolilo, Surabaya, Jawa Timur 60116',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
@@ -396,11 +397,14 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                       OutlinedButton(
                         onPressed: () {},
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF2979FF)),
+                          side: const BorderSide(color: Color(0xFF43A047)),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 0),
+                            horizontal: 16,
+                            vertical: 0,
+                          ),
                           minimumSize: const Size(0, 32),
                         ),
                         child: const Text(
@@ -408,7 +412,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 11,
-                            color: Color(0xFF2979FF),
+                            color: Color(0xFF43A047),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -436,11 +440,14 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.access_time,
-                      color: Color(0xFF2979FF), size: 20),
+                  child: const Icon(
+                    Icons.access_time,
+                    color: Color(0xFF43A047),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -457,11 +464,13 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _buildJamRow('Senin', '08.00 - 15.30 WIB'),
-                      _buildJamRow('Selasa', '08.00 - 15.30 WIB'),
-                      _buildJamRow('Rabu', '08.00 - 15.30 WIB'),
-                      _buildJamRow('Kamis', '08.00 - 15.30 WIB'),
-                      _buildJamRow('Jumat', '08.00 - 15.30 WIB'),
+                      _buildJamRow('Senin', '24 Jam'),
+                      _buildJamRow('Selasa', '24 Jam'),
+                      _buildJamRow('Rabu', '24 Jam'),
+                      _buildJamRow('Kamis', '24 Jam'),
+                      _buildJamRow('Jumat', '24 Jam'),
+                      _buildJamRow('Sabtu', '24 Jam'),
+                      _buildJamRow('Minggu', '24 Jam'),
                     ],
                   ),
                 ),
@@ -484,11 +493,14 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.share_outlined,
-                      color: Color(0xFF2979FF), size: 20),
+                  child: const Icon(
+                    Icons.share_outlined,
+                    color: Color(0xFF43A047),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -507,14 +519,102 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          _buildSocialIcon(Icons.camera_alt, const Color(0xFFE1306C)), // IG
+                          _buildSocialIcon(
+                            Icons.camera_alt,
+                            const Color(0xFFE1306C),
+                          ),
                           const SizedBox(width: 10),
-                          _buildSocialIcon(Icons.facebook, const Color(0xFF1877F2)), // FB
+                          _buildSocialIcon(
+                            Icons.facebook,
+                            const Color(0xFF1877F2),
+                          ),
                           const SizedBox(width: 10),
-                          _buildSocialIcon(Icons.music_note, Colors.black), // TikTok
+                          _buildSocialIcon(
+                            Icons.music_note,
+                            Colors.black,
+                          ),
                           const SizedBox(width: 10),
-                          _buildSocialIcon(Icons.close, Colors.black), // X
+                          _buildSocialIcon(
+                            Icons.close,
+                            Colors.black,
+                          ),
                         ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Aplikasi
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.apps,
+                    color: Color(0xFF43A047),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Aplikasi',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Google Play',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -536,7 +636,7 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
             width: 4,
             height: 4,
             decoration: const BoxDecoration(
-              color: Color(0xFF2979FF),
+              color: Color(0xFF43A047),
               shape: BoxShape.circle,
             ),
           ),
@@ -583,26 +683,31 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
   // ─────────────────────────────────────────────
   Widget _buildTabKetentuanUmum() {
     return Padding(
+      key: const ValueKey('ketentuan'),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         children: [
-          _ExpandableCard(
+          _RsudHajiExpandableCard(
             title: 'Manfaat',
             content:
-                'Sebagai institusi yang berperan penting dalam pengelolaan Pendapatan Asli Daerah, BAPENDA bertujuan meningkatkan transparansi, akuntabilitas, dan kualitas pengelolaan keuangan di tingkat Provinsi dan Kabupaten/Kota di Jawa Timur',
+                'Pendaftaran pasien online merupakan inovasi RSUD Haji Provinsi Jawa Timur yang menjadikan proses pelayanan lebih cepat dan efisien, baik dari sisi pasien maupun rumah sakit. Pasien juga bisa lebih mudah mengetahui jumlah ketersediaan kamar di RSUD Haji Provinsi Jawa Timur. Dengan sistem yang lebih terbuka, pelayanan dan informasi rekam medis pasien lebih terkontrol. Pasien lebih mudah mengetahui nomor antrian tanpa harus datang ke rumah sakit; juga bisa mengakses berbagai informasi penting kapanpun, dan dari manapun.',
           ),
           const SizedBox(height: 12),
-          _ExpandableCard(
+          _RsudHajiExpandableCard(
             title: 'Sistem, Mekanisme, dan Prosedur',
             content:
-                'Cara cek informasi pajak dan nilai jual kendaraan\n\n'
-                '1. Kunjungi laman resmi Bapenda Jatim\n'
-                '2. Cek info pajak kendaraan bermotor di menu Info, lalu pilih info PKB\n'
-                '3. Masukkan plat nomor kendaraan\n'
-                '4. Masukkan 5 digit terakhir nomor rangka\n'
-                '5. Untuk mengetahui info nilai jual kendaraan, klik info besar PKB dan BBN di menu info. Isi data yang diminta, lalu klil submit\n\n'
-                'Pembayaran Pajak Kendaraan Bermotor (PKB) tahunan bisa dilakukan di Kantor Bersama Samsat atau melalui E-Samsat. Aplikasi E-Samsat merupakan sistem pembayaran Pajak Kendaraan Bermotor (PKB), Sumbangan Wajib Dana Kecelakaan Lalu Lintas Jalan (SWDKLLJ), dan/atau Parkir Berlangganan tahunan.\n\n'
-                'Pembayaran E-Samsat bisa melalui marketplace, e-wallet, serta Payment Poin Online Bank (PPOP), seperti Indomaret, Alfamart, Alfamidi, Kantor Pos, Agen Badan Usaha Milik Desa (BUMDes/Samsat Bunda), Samsat One Pesantren One Produk (OPOP), Samsat Kampus, dan sebagainya.',
+                '1. Klik app.rsudhaji.jatimprov.go.id/online di menu pencarian pengakot. Anda juga bisa langsung klik Pendaftaran Pasien Online RSUD Haji Provinsi Jawa Timur\n\n'
+                '2. Pilih kategori layanan yang dituju (khusus member RSUD Haji Jatim)\n\n'
+                '3. Jika Anda belum terdaftar sebagai member, silakan pilih menu pasien baru\n\n'
+                '4. Isi formulir pendaftaran pasien online sampai selesai\n\n'
+                'Syarat & Ketentuan pendaftaran pasien online:\n'
+                '1. Pendaftaran online hanya berlaku bagi pasien yang sudah terdaftar sebagai member RSUD Haji Provinsi Jawa Timur\n'
+                '2. Untuk pasien baru, silakan daftar sebagai member dengan memilih menu Pasien Baru di halaman registrasi online\n'
+                '3. Khusus Pasien Anak (belum punya KTP), bisa memasukkan NIK yang tertera di Kartu Keluarga, dan mengupload foto KK sebagai ganti foto KTP\n'
+                '4. Pilih menu Medical Checkup untuk layanan vaksin dan medical check up (CPNS)\n'
+                '5. Pendaftaran online untuk layanan vaksin dan medical check up (CPNS) bisa dilakukan baik oleh pasien yang sudah terdaftar sebagai member maupun belum\n'
+                '6. Pendaftaran online hanya bisa dilakukan satu kali sampai layanan di poli selesai\n'
+                '7. Pendaftaran online belum bisa digunakan untuk asuransi pihak ketiga',
           ),
         ],
       ),
@@ -611,19 +716,23 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
 }
 
 // ─────────────────────────────────────────────
-// Expandable Card Widget
+// Expandable Card Widget for RSUD Haji
 // ─────────────────────────────────────────────
-class _ExpandableCard extends StatefulWidget {
+class _RsudHajiExpandableCard extends StatefulWidget {
   final String title;
   final String content;
 
-  const _ExpandableCard({required this.title, required this.content});
+  const _RsudHajiExpandableCard({
+    required this.title,
+    required this.content,
+  });
 
   @override
-  State<_ExpandableCard> createState() => _ExpandableCardState();
+  State<_RsudHajiExpandableCard> createState() =>
+      _RsudHajiExpandableCardState();
 }
 
-class _ExpandableCardState extends State<_ExpandableCard> {
+class _RsudHajiExpandableCardState extends State<_RsudHajiExpandableCard> {
   bool _isExpanded = false;
 
   @override
@@ -635,7 +744,10 @@ class _ExpandableCardState extends State<_ExpandableCard> {
         color: _isExpanded ? const Color(0xFFF9FAFB) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _isExpanded ? const Color(0xFF2979FF) : const Color(0xFFE5E7EB),
+          color:
+              _isExpanded
+                  ? const Color(0xFF43A047)
+                  : const Color(0xFFE5E7EB),
         ),
       ),
       child: Column(
@@ -645,7 +757,10 @@ class _ExpandableCardState extends State<_ExpandableCard> {
             onTap: () => setState(() => _isExpanded = !_isExpanded),
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -685,9 +800,10 @@ class _ExpandableCardState extends State<_ExpandableCard> {
                 ),
               ),
             ),
-            crossFadeState: _isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
+            crossFadeState:
+                _isExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
           ),
         ],

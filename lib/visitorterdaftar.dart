@@ -5,6 +5,17 @@ import 'semua_layanan.dart';
 import 'klinik_hoaks.dart';
 import 'bapenda_jatim.dart';
 import 'islamic_center.dart';
+import 'rsud_haji.dart';
+import 'rsud_haji_ketersediaan_kamar.dart';
+import 'skrining_tbc.dart';
+import 'sapa_bansos.dart';
+import 'point_jatim.dart';
+import 'rsud_karsa_husada.dart';
+import 'rsud_karsa_husada_ketersediaan_kamar.dart';
+import 'rsud_daha_husada.dart';
+import 'rsud_daha_husada_jadwal_operasi.dart';
+import 'rsud_daha_husada_antrian.dart';
+import 'nomor_darurat.dart';
 
 // Data model untuk layanan
 class LayananItem {
@@ -83,6 +94,28 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
     } else if (id == 'islamic') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
+    } else if (id == 'rsud_haji') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiPage()));
+    } else if (id == 'info_kamar') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiKetersediaanKamarPage()));
+    } else if (id == 'skrining') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const SkriningTbcPage()));
+    } else if (id == 'sapa_bansos') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const SapaBansosPage()));
+    } else if (id == 'point') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const PointJatimPage()));
+    } else if (id == 'rsud_karsa') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaPage()));
+    } else if (id == 'ketersediaan') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaKetersediaanKamarPage()));
+    } else if (id == 'rsud_daha') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaPage()));
+    } else if (id == 'jadwal_op') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaJadwalOperasiPage()));
+    } else if (id == 'antrian') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaAntrianPage()));
+    } else if (id == 'darurat') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const NomorDaruratPage()));
     }
   }
 
@@ -137,7 +170,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Image.asset('assets/welcome_image.png', fit: BoxFit.cover, height: 160, width: double.infinity,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     height: 160, width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -179,7 +212,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _favoritLayanan.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    separatorBuilder: (_, _) => const SizedBox(width: 16),
                     itemBuilder: (context, index) {
                       final item = _favoritLayanan[index];
                       return GestureDetector(
@@ -191,7 +224,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                               Container(
                                 width: 50, height: 50,
                                 decoration: BoxDecoration(
-                                  color: item.iconColor.withOpacity(0.1),
+                                  color: item.iconColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Icon(item.icon, color: item.iconColor, size: 26),
@@ -296,7 +329,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                       child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
                     ),
                   ],
@@ -334,7 +367,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
         children: [
           Container(
             width: 50, height: 50,
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
             child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 6),
@@ -379,7 +412,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: catColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(color: catColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                       child: Text(category, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: catColor, fontWeight: FontWeight.w600)),
                     ),
                     const SizedBox(width: 6),

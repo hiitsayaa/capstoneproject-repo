@@ -27,8 +27,7 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
   final _kataSandiCtrl = TextEditingController();
   final _ulangiSandiCtrl = TextEditingController();
 
-  String? _jenisKelamin;
-  DateTime? _selectedDate;
+  final _jenisKelaminCtrl = TextEditingController();
   bool _autoValidate = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -40,6 +39,7 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
     _tglLahirCtrl.dispose();
     _kataSandiCtrl.dispose();
     _ulangiSandiCtrl.dispose();
+    _jenisKelaminCtrl.dispose();
     super.dispose();
   }
 
@@ -53,9 +53,42 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
     );
     if (picked != null) {
       setState(() {
-        _selectedDate = picked;
         _tglLahirCtrl.text = DateFormat('d MMMM yyyy', 'id').format(picked);
       });
+    }
+  }
+
+  Future<void> _pickJenisKelamin() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Opsi Jenis Kelamin', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Laki-laki', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
+                onTap: () => Navigator.pop(context, 'Laki-laki'),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Perempuan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
+                onTap: () => Navigator.pop(context, 'Perempuan'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected != null) {
+      setState(() => _jenisKelaminCtrl.text = selected);
     }
   }
 
@@ -181,16 +214,15 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
 
                       // Jenis Kelamin
                       _label('Jenis Kelamin'),
-                      DropdownButtonFormField<String>(
-                        value: _jenisKelamin,
-                        decoration: _inputDeco('Masukkan jenis kelamin'),
-                        icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF6B7280)),
-                        items: const [
-                          DropdownMenuItem(value: 'Laki-laki', child: Text('Laki-laki', style: TextStyle(fontFamily: 'Poppins', fontSize: 14))),
-                          DropdownMenuItem(value: 'Perempuan', child: Text('Perempuan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14))),
-                        ],
-                        onChanged: (v) => setState(() => _jenisKelamin = v),
-                        validator: (v) => v == null ? 'Jenis Kelamin tidak boleh kosong' : null,
+                      TextFormField(
+                        controller: _jenisKelaminCtrl,
+                        readOnly: true,
+                        onTap: _pickJenisKelamin,
+                        style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                        decoration: _inputDeco('Masukkan jenis kelamin',
+                          suffixIcon: const Icon(Icons.keyboard_arrow_down, size: 20, color: Color(0xFF6B7280)),
+                        ),
+                        validator: (v) => v!.trim().isEmpty ? 'Jenis kelamin tidak boleh kosong' : null,
                       ),
                       const SizedBox(height: 16),
 

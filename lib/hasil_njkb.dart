@@ -37,7 +37,7 @@ class HasilNjkbPage extends StatelessWidget {
                 color: Colors.white, // In real app, this can be a gradient or background image
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFE5E7EB)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Stack(
                 children: [
@@ -70,7 +70,7 @@ class HasilNjkbPage extends StatelessWidget {
                   Positioned(
                     right: 0,
                     top: 10,
-                    child: Icon(Icons.directions_car, size: 80, color: const Color(0xFF2979FF).withOpacity(0.3)), // Placeholder for car image
+                    child: Icon(Icons.directions_car, size: 80, color: const Color(0xFF2979FF).withValues(alpha: 0.3)), // Placeholder for car image
                   ),
                 ],
               ),
@@ -211,7 +211,7 @@ class HasilNjkbPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: bodyColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: headerColor.withOpacity(0.5)),
+        border: Border.all(color: headerColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
