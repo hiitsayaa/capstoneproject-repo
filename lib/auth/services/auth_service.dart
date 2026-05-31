@@ -1,33 +1,87 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  
+  // Gunakan 10.0.2.2 untuk Emulator Android.
+  // Jika menggunakan HP fisik, ganti dengan IP Address WiFi laptop Anda (misal: 192.168.1.5:3000)
+  final String baseUrl = 'http://10.0.2.2:3000'; 
 
-  /// Melakukan login dengan email dan password.
-  /// Mengembalikan UserModel jika berhasil, atau melempar Exception jika gagal.
-  Future<UserModel> login(String email, String password) async {
+  /// Mendapatkan token yang tersimpan
+  Future<String?> getToken() async {
+    return await _storage.read(key: 'access_token');
+  }
+
+  /// Mengekstrak profil user dari backend berdasarkan token saat ini
+  Future<UserModel?> getCurrentUser() async {
+    final token = await getToken();
+    if (token == null) return null;
+
     try {
-      UserCredential credential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+      final url = Uri.parse('$baseUrl/profile/me');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
-      
-      return UserModel(
-        id: credential.user!.uid,
-        email: credential.user!.email ?? email,
-        name: credential.user!.displayName ?? email.split('@').first,
-      );
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Terjadi kesalahan saat login');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        bool isComplete = data['nik'] != null && data['nik'].toString().isNotEmpty;
+        return UserModel(
+          id: data['id']?.toString() ?? '1',
+          email: data['email'] ?? '',
+          name: data['nama_lengkap'] ?? 'Pengguna',
+          isProfileComplete: isComplete,
+        );
+      } else {
+        // Token mungkin kedaluwarsa
+        await logout();
+        return null;
+      }
+    } catch (e) {
+      return null;
     }
   }
 
-  /// Mendaftarkan user baru dengan email, password, dan menyimpan profil ke backend.
+  /// Melakukan login dengan email dan password.
+  Future<UserModel> login(String email, String password) async {
+    try {
+      final url = Uri.parse('$baseUrl/auth/login');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['access_token'];
+        
+        // Simpan token ke storage
+        await _storage.write(key: 'access_token', value: token);
+        
+        // Ambil profil
+        final user = await getCurrentUser();
+        if (user != null) return user;
+        throw Exception('Gagal mendapatkan profil pengguna');
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Email atau password salah');
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// Mendaftarkan user baru
   Future<UserModel> register({
     required String email,
     required String password,
@@ -40,116 +94,40 @@ class AuthService {
     required String jenisKelamin,
   }) async {
     try {
-      // 1. Register di Firebase Auth
-      UserCredential credential = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      // 2. Ambil ID Token
-      String? idToken = await credential.user!.getIdToken();
-      if (idToken == null) throw Exception('Gagal mendapatkan ID Token dari Firebase');
-
-      // 3. Kirim data ke Backend Express.js
-      // Catatan: Gunakan 10.0.2.2 jika di Android Emulator, atau localhost / IP lokal jika di Web/Windows/iOS
-      final url = Uri.parse('http://127.0.0.1:3000/api/users/register'); 
+      final url = Uri.parse('$baseUrl/auth/register'); 
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
-          'nama_depan': namaDepan,
-          'nama_belakang': namaBelakang,
-          'nomor_hp': nomorHp,
-          'alamat': alamat,
+          'password': password,
+          'nama_lengkap': '$namaDepan $namaBelakang'.trim(),
           'nik': nik,
-          'tanggal_lahir': tanggalLahir,
-          'jenis_kelamin': jenisKelamin,
+          // Backend Majadigi saat ini fokus pada 4 field utama di API contract
+          // Field lainnya bisa di-update nanti via /profile/me
         }),
       );
 
-      if (response.statusCode != 201) {
-        throw Exception('Gagal menyimpan profil di server: ${response.body}');
+      if (response.statusCode == 201) {
+        // Otomatis login setelah register berhasil
+        return await login(email, password);
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Gagal mendaftar');
       }
-      
-      return UserModel(
-        id: credential.user!.uid,
-        email: credential.user!.email ?? email,
-        name: namaDepan,
-      );
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Terjadi kesalahan saat pendaftaran');
-    }
-  }
-
-  /// Melakukan login menggunakan Google Sign-In
-  Future<UserModel> signInWithGoogle() async {
-    try {
-      // 1. Memunculkan popup Google Sign In
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw Exception('Dibatalkan oleh pengguna');
-      }
-
-      // 2. Dapatkan token dari Google
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // 3. Buat kredensial Firebase
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // 4. Sign in ke Firebase
-      final UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
-      final User? user = userCredential.user;
-
-      if (user == null) {
-        throw Exception('Gagal login ke Firebase');
-      }
-
-      // 5. Ambil Token Firebase untuk backend
-      final String? firebaseIdToken = await user.getIdToken();
-      if (firebaseIdToken == null) {
-        throw Exception('Gagal mendapatkan Token Firebase');
-      }
-
-      // 6. Sinkronisasi dengan Backend (Membuat profil otomatis atau mengambil profil lama)
-      final url = Uri.parse('http://127.0.0.1:3000/api/users/google-login'); 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $firebaseIdToken',
-        },
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Gagal sinkronisasi data dengan server');
-      }
-
-      final responseData = jsonDecode(response.body);
-      final profileData = responseData['data'];
-
-      bool isComplete = profileData['nik'] != null && profileData['nik'].toString().isNotEmpty;
-
-      return UserModel(
-        id: user.uid,
-        email: user.email ?? '',
-        name: profileData['nama_depan'] ?? user.displayName ?? '',
-        isProfileComplete: isComplete,
-      );
-
     } catch (e) {
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
+  /// Melakukan login menggunakan Google Sign-In (Dihapus sementara)
+  Future<UserModel> signInWithGoogle() async {
+    throw Exception('Fitur Login Google saat ini belum didukung oleh server Majadigi');
+  }
+
   /// Logout user
   Future<void> logout() async {
-    await _firebaseAuth.signOut();
+    await _storage.delete(key: 'access_token');
   }
 }
+

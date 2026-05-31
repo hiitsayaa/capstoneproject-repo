@@ -190,65 +190,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Divider "atau"
-                const Row(children: [
-                  Expanded(child: Divider(color: Color(0xFFE5E7EB))),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('atau', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF9CA3AF)))),
-                  Expanded(child: Divider(color: Color(0xFFE5E7EB))),
-                ]),
-                const SizedBox(height: 20),
-
-                // Login dengan Google
-                SizedBox(
-                  width: double.infinity, height: 52,
-                  child: ListenableBuilder(
-                    listenable: _authController,
-                    builder: (context, _) {
-                      return OutlinedButton.icon(
-                        onPressed: _authController.isLoading ? null : () async {
-                          final success = await _authController.signInWithGoogle();
-                          if (!context.mounted) return;
-                          
-                          if (success) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (_) => const VisitorTerdaftarPage()),
-                              (route) => false,
-                            );
-                          } else if (_authController.errorMessage != null && _authController.errorMessage != 'Dibatalkan oleh pengguna') {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.cancel, color: Colors.white, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: Text(_authController.errorMessage!, style: const TextStyle(fontFamily: 'Poppins'))),
-                                  ],
-                                ),
-                                backgroundColor: Colors.red,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                margin: const EdgeInsets.all(16),
-                              ),
-                            );
-                          }
-                        },
-                        icon: _authController.isLoading
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                            : Image.asset('assets/google_icon.png', width: 20, height: 20,
-                                errorBuilder: (_, _, _) => const Icon(Icons.g_mobiledata, size: 24, color: Colors.red),
-                              ),
-                        label: Text(_authController.isLoading ? 'Memuat...' : 'Login dengan Google', style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 14)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black87,
-                          side: const BorderSide(color: Color(0xFFD1D5DB)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    }
-                  ),
-                ),
-                const SizedBox(height: 24),
 
                 // Belum memiliki akun?
                 Center(

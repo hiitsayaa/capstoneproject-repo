@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:firebase_core/firebase_core.dart';
-import '../firebase_options.dart';
 import 'package:flutter_application_1/account/visitor.dart'; // Menghubungkan ke halaman visitor
 import 'package:flutter_application_1/auth/views/register_view.dart';
 import 'package:flutter_application_1/auth/views/login_view.dart';
+import 'package:flutter_application_1/auth/controllers/auth_controller.dart';
+import 'package:flutter_application_1/account/visitorterdaftar.dart';
 
 void main() async {
   // Menahan Splash Screen asli sampai Flutter siap
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
   
   runApp(const MyApp());
 }
@@ -74,13 +70,17 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
       });
     }
 
+    // Coba memulihkan sesi JWT
+    final authController = AuthController();
+    bool isLoggedIn = await authController.tryResumeSession();
+
     await Future.delayed(const Duration(milliseconds: 900));
     if (mounted) {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => 
-              const WelcomeScreen(),
+              isLoggedIn ? const VisitorTerdaftarPage() : const WelcomeScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },

@@ -9,6 +9,26 @@ class AuthController extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
+  /// Memulihkan sesi pengguna yang sudah login sebelumnya (jika ada token)
+  Future<bool> tryResumeSession() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final user = await _authService.getCurrentUser();
+      if (user != null) {
+        currentUser = user;
+        isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (_) {}
+
+    isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
   Future<bool> login(String email, String password) async {
     isLoading = true;
     errorMessage = null;
@@ -68,22 +88,9 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<bool> signInWithGoogle() async {
-    isLoading = true;
-    errorMessage = null;
+    errorMessage = 'Fitur Login Google tidak didukung oleh backend Majadigi saat ini.';
     notifyListeners();
-
-    try {
-      final user = await _authService.signInWithGoogle();
-      currentUser = user;
-      isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      errorMessage = e.toString().replaceAll('Exception: ', '');
-      isLoading = false;
-      notifyListeners();
-      return false;
-    }
+    return false;
   }
 
   Future<void> logout() async {
