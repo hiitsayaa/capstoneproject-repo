@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "597211099331",
+    "project_id": "capstone-majadigi-88244",
+    "storage_bucket": "capstone-majadigi-88244.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597211099331:android:23b32d381e26b4ea05b276",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "597211099331-uo4ct8idu8k3o6k41luh408kq99n455b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBd47eizTSF5PikD7xAtPic9D_yowYkIto"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "597211099331-uo4ct8idu8k3o6k41luh408kq99n455b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "597211099331-ali9uf1t62lj7ms135td9fqlfpt8urqt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterApplication1"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
