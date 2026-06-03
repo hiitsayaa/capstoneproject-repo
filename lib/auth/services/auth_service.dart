@@ -2,13 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
+import '../../core/api_constants.dart';
 
 class AuthService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  
-  // Gunakan 10.0.2.2 untuk Emulator Android.
-  // Jika menggunakan HP fisik, ganti dengan IP Address WiFi laptop Anda (misal: 192.168.1.5:3000)
-  final String baseUrl = 'http://10.0.2.2:3000'; 
 
   /// Mendapatkan token yang tersimpan
   Future<String?> getToken() async {
@@ -21,7 +18,7 @@ class AuthService {
     if (token == null) return null;
 
     try {
-      final url = Uri.parse('$baseUrl/profile/me');
+      final url = Uri.parse(ApiConstants.profile);
       final response = await http.get(
         url,
         headers: {
@@ -51,7 +48,7 @@ class AuthService {
   /// Melakukan login dengan email dan password.
   Future<UserModel> login(String email, String password) async {
     try {
-      final url = Uri.parse('$baseUrl/auth/login');
+      final url = Uri.parse(ApiConstants.login);
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -94,7 +91,7 @@ class AuthService {
     required String jenisKelamin,
   }) async {
     try {
-      final url = Uri.parse('$baseUrl/auth/register'); 
+      final url = Uri.parse(ApiConstants.register); 
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

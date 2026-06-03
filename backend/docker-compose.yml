@@ -1,0 +1,43 @@
+services:
+  majadigi-postgres:
+    image: postgres:16-alpine
+    container_name: majadigi_db
+    restart: always
+    environment:
+      POSTGRES_DB: majadigi
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: securepassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql
+      - ./seed-demo.sql:/docker-entrypoint-initdb.d/02-seed-demo.sql
+    networks:
+      - majadigi-network
+
+  majadigi-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: majadigi_api
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://dev_user:securepassword@majadigi-postgres:5432/majadigi?schema=public
+      JWT_SECRET: capstoneC9superappkey
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - majadigi-postgres
+    networks:
+      - majadigi-network
+
+volumes:
+  pgdata:
+
+networks:
+  majadigi-network:
+    driver: bridge

@@ -29,7 +29,7 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
   final List<String> _categories = ['Semua', 'Kesehatan', 'Kerja', 'Usaha', 'Transportasi'];
 
   List<LayananItem> get _filtered {
-    var list = semuaLayanan.toList();
+    var list = referensiLayanan.toList();
     if (_searchQuery.isNotEmpty) {
       list = list.where((l) => l.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
     }
@@ -122,33 +122,33 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
                   subtitle: Text(item.subtitle, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF9CA3AF))),
                   trailing: const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
                   onTap: () {
-                    if (item.id == 'islamic') {
+                    if (item.id == 'islamic_center') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
-                    } else if (item.id == 'klinik') {
+                    } else if (item.id == 'klinik_hoaks') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
                     } else if (item.id == 'bapenda') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
                     } else if (item.id == 'rsud_haji') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiPage()));
-                    } else if (item.id == 'info_kamar') {
+                    } else if (item.id == 'rsud_haji_rooms') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiKetersediaanKamarPage()));
-                    } else if (item.id == 'skrining') {
+                    } else if (item.id == 'skrining_tbc') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SkriningTbcPage()));
                     } else if (item.id == 'sapa_bansos') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SapaBansosPage()));
-                    } else if (item.id == 'point') {
+                    } else if (item.id == 'point_jatim') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const PointJatimPage()));
-                    } else if (item.id == 'rsud_karsa') {
+                    } else if (item.id == 'rsud_karsa_husada') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaPage()));
-                    } else if (item.id == 'ketersediaan') {
+                    } else if (item.id == 'rsud_karsa_rooms') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaKetersediaanKamarPage()));
-                    } else if (item.id == 'rsud_daha') {
+                    } else if (item.id == 'rsud_daha_husada') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaPage()));
-                    } else if (item.id == 'jadwal_op') {
+                    } else if (item.id == 'rsud_daha_surgeries') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaJadwalOperasiPage()));
-                    } else if (item.id == 'antrian') {
+                    } else if (item.id == 'rsud_daha_queue') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaAntrianPage()));
-                    } else if (item.id == 'darurat') {
+                    } else if (item.id == 'nomor_darurat') {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const NomorDaruratPage()));
                     }
                   },

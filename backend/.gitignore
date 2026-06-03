@@ -1,0 +1,58 @@
+# Compiled output
+/dist
+/node_modules
+
+# NestJS CLI cache
+.nestcli.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data / testing outputs
+pids
+lib-cov
+coverage
+.nyc_output
+.k6-reports/
+
+# Environment variables (Critical Security)
+.env
+.env.production
+.env.development
+.env.local
+.env.test
+
+# Docker local data/logs
+.docker
+pgdata/
+
+# AI Agent metadata & logs
+.agents/
+.codex/

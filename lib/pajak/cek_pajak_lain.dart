@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_1/pajak/pembayaran_pkb.dart';
+import 'package:flutter_application_1/pajak/services/bapenda_service.dart';
 
 class CekPajakLainPage extends StatefulWidget {
   const CekPajakLainPage({super.key});
@@ -10,6 +11,10 @@ class CekPajakLainPage extends StatefulWidget {
 }
 
 class _CekPajakLainPageState extends State<CekPajakLainPage> {
+  final BapendaService _bapendaService = BapendaService();
+  bool _isLoading = false;
+  Map<String, dynamic>? _pkbResult;
+
   int _step = 0; // 0: Plat Nomor, 1: NIK & No Rangka, 2: Hasil Info
   
   String _selectedPlateColor = 'Hitam/Putih';
@@ -30,15 +35,40 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
     super.dispose();
   }
 
-  void _nextStep() {
-    if (_step < 2) {
+  Future<void> _nextStep() async {
+    if (_step == 0) {
       setState(() => _step++);
+    } else if (_step == 1) {
+      // Panggil API saat lanjut dari Step 1 ke 2
+      final String nopol = '${_platKodeWilayahController.text}${_platAngkaController.text}${_platSeriController.text}';
+      
+      setState(() => _isLoading = true);
+      
+      final result = await _bapendaService.checkPkb(nopol);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (result != null) {
+            _pkbResult = result;
+            _step++;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Data kendaraan tidak ditemukan atau terjadi kesalahan server.')),
+            );
+          }
+        });
+      }
     } else {
       // Step 2 is the detail, next is Pembayaran
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PembayaranPkbPage()),
-      );
+      if (_pkbResult != null && _pkbResult!['bills'] != null && (_pkbResult!['bills'] as List).isNotEmpty) {
+        // Kita bypass halaman detail dan ke pembayaran jika perlu, 
+        // tapi untuk sekarang kita ke PembayaranPkbPage() saja
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PembayaranPkbPage()), // Note: Idealy pass bill data
+        );
+      }
     }
   }
 
@@ -70,9 +100,11 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        child: _buildBody(),
-      ),
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: _buildBody(),
+            ),
       bottomNavigationBar: _step == 2 ? null : Padding(
         padding: const EdgeInsets.all(20.0),
         child: ElevatedButton(
@@ -301,6 +333,19 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
   // STEP 2: INFORMASI DETAIL
   // ─────────────────────────────────────────────
   Widget _buildStep2() {
+    if (_pkbResult == null) return const SizedBox();
+    
+    final vehicle = _pkbResult!['vehicle'] ?? {};
+    final bills = _pkbResult!['bills'] as List? ?? [];
+    final latestBill = bills.isNotEmpty ? bills.first : {};
+    
+    // Safety fallback format number (simplifikasi)
+    String formatCurrency(num amount) {
+      return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+    }
+    
+    final total = latestBill['total'] ?? 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
@@ -322,19 +367,19 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('Merk', 'Toyota Innova')),
-                    Expanded(child: _buildInfoPair('Model', 'V 2.4 A/T')),
+                    Expanded(child: _buildInfoPair('Merk', vehicle['merk'] ?? '-')),
+                    Expanded(child: _buildInfoPair('Model', vehicle['tipe'] ?? '-')),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('No. Polisi', 'N 1 AB')),
-                    Expanded(child: _buildInfoPair('Warna', 'BLACK')),
+                    Expanded(child: _buildInfoPair('No. Polisi', vehicle['nopol'] ?? '-')),
+                    Expanded(child: _buildInfoPair('Warna', 'BLACK')), // Dummy as DB doesn't have color
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildInfoPair('Tahun Pembuatan', '2023'),
+                _buildInfoPair('Tahun Pembuatan', vehicle['tahun']?.toString() ?? '-'),
               ],
             ),
           ),
@@ -356,19 +401,17 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('Masa Berlaku Pajak', '15 Juli 2026 - 15 Juli 2027')),
-                    Expanded(child: _buildInfoPair('Tgl. STNK', '14 Juli 2029')),
+                    Expanded(child: _buildInfoPair('Masa Berlaku Pajak', latestBill['due_date'] ?? '-')),
+                    Expanded(child: _buildInfoPair('Tgl. STNK', latestBill['due_date'] ?? '-')),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('Wilayah', 'MALANG')),
-                    Expanded(child: _buildInfoPair('Tgl. Proses', '1 April 2026 17.31.26')),
+                    Expanded(child: _buildInfoPair('Wilayah', 'JAWA TIMUR')),
+                    Expanded(child: _buildInfoPair('Status Tagihan', latestBill['status'] ?? '-')),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _buildInfoPair('Milik ke', '2'),
               ],
             ),
           ),
@@ -404,11 +447,11 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                    const Text('Total Tagihan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                     Row(
-                      children: const [
-                        Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
-                        Text('1.069.100', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
+                      children: [
+                        const Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                        Text(formatCurrency(total), style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],

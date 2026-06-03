@@ -41,11 +41,11 @@ class _KelolaFavoritPageState extends State<KelolaFavoritPage> {
   }
 
   List<LayananItem> get _filtered {
-    if (_searchQuery.isEmpty) return semuaLayanan;
-    return semuaLayanan.where((l) => l.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    if (_searchQuery.isEmpty) return referensiLayanan;
+    return referensiLayanan.where((l) => l.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
   }
 
-  List<LayananItem> get _favoritItems => semuaLayanan.where((l) => _selectedIds.contains(l.id)).toList();
+  List<LayananItem> get _favoritItems => referensiLayanan.where((l) => _selectedIds.contains(l.id)).toList();
 
   @override
   Widget build(BuildContext context) {

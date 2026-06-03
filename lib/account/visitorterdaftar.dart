@@ -5,6 +5,7 @@ import 'package:flutter_application_1/widgets/incomplete_profile_dialog.dart';
 import 'package:flutter_application_1/core/kelola_favorit.dart';
 import 'package:flutter_application_1/core/semua_layanan.dart';
 import 'package:flutter_application_1/hoaks/klinik_hoaks.dart';
+import 'package:flutter_application_1/core/gateway_service.dart';
 import 'package:flutter_application_1/pajak/bapenda_jatim.dart';
 import 'package:flutter_application_1/islamic_center/islamic_center.dart';
 import 'package:flutter_application_1/kesehatan/rsud_haji.dart';
@@ -36,24 +37,18 @@ class LayananItem {
   });
 }
 
-// Daftar semua layanan yang tersedia
-const List<LayananItem> semuaLayanan = [
+// Daftar semua layanan yang tersedia (dijadikan referensi ikon/warna)
+const List<LayananItem> referensiLayanan = [
   LayananItem(id: 'bapenda', name: 'Bapenda Jatim', subtitle: 'Bapenda Jatim', icon: Icons.account_balance, iconColor: Color(0xFF1565C0)),
-  LayananItem(id: 'klinik', name: 'Klinik Hoaks', subtitle: 'Klinik Hoaks', icon: Icons.fact_check, iconColor: Color(0xFFE53935)),
-  LayananItem(id: 'darurat', name: 'Nomor Darurat', subtitle: 'Nomor Darurat', icon: Icons.phone_in_talk, iconColor: Color(0xFFE53935)),
-  LayananItem(id: 'point', name: 'Point Jatim', subtitle: 'Point Jatim', icon: Icons.stars, iconColor: Color(0xFF43A047)),
-  LayananItem(id: 'skrining', name: 'Skrining E-Tibi', subtitle: 'Skrining E-Tibi', icon: Icons.medical_services, iconColor: Color(0xFF00897B)),
-  LayananItem(id: 'rsud_daha', name: 'Rsud Daha Husada', subtitle: 'RSUD Daha Husada', icon: Icons.local_hospital, iconColor: Color(0xFF1E88E5)),
+  LayananItem(id: 'klinik_hoaks', name: 'Klinik Hoaks', subtitle: 'Klinik Hoaks', icon: Icons.fact_check, iconColor: Color(0xFFE53935)),
+  LayananItem(id: 'nomor_darurat', name: 'Nomor Darurat', subtitle: 'Nomor Darurat', icon: Icons.phone_in_talk, iconColor: Color(0xFFE53935)),
+  LayananItem(id: 'point_jatim', name: 'Point Jatim', subtitle: 'Point Jatim', icon: Icons.stars, iconColor: Color(0xFF43A047)),
+  LayananItem(id: 'skrining_tbc', name: 'Skrining E-Tibi', subtitle: 'Skrining E-Tibi', icon: Icons.medical_services, iconColor: Color(0xFF00897B)),
+  LayananItem(id: 'rsud_daha_husada', name: 'Rsud Daha Husada', subtitle: 'RSUD Daha Husada', icon: Icons.local_hospital, iconColor: Color(0xFF1E88E5)),
   LayananItem(id: 'rsud_haji', name: 'Rsud Haji Prov. Jatim', subtitle: 'RSUD Haji Prov. Jatim', icon: Icons.health_and_safety, iconColor: Color(0xFF43A047)),
-  LayananItem(id: 'rsud_karsa', name: 'RSUD Karsa Husada', subtitle: 'RSUD Karsa Husada', icon: Icons.local_hospital, iconColor: Color(0xFF5E35B1)),
+  LayananItem(id: 'rsud_karsa_husada', name: 'RSUD Karsa Husada', subtitle: 'RSUD Karsa Husada', icon: Icons.local_hospital, iconColor: Color(0xFF5E35B1)),
   LayananItem(id: 'sapa_bansos', name: 'Sapa Bansos', subtitle: 'SAPA BANSOS', icon: Icons.volunteer_activism, iconColor: Color(0xFFFF6F00)),
-  LayananItem(id: 'islamic', name: 'Islamic Center', subtitle: 'Islamic Center', icon: Icons.mosque, iconColor: Color(0xFF00897B)),
-  LayananItem(id: 'njkb', name: 'Info NJKB', subtitle: 'Bapenda Jatim', icon: Icons.directions_car, iconColor: Color(0xFF1565C0)),
-  LayananItem(id: 'ketersediaan', name: 'Ketersediaan Kamar Rawat', subtitle: 'RSUD Karsa Husada', icon: Icons.bed, iconColor: Color(0xFF5E35B1)),
-  LayananItem(id: 'info_kamar', name: 'Info Kamar RSUD Haji', subtitle: 'RSUD Haji Prov. Jatim', icon: Icons.bed, iconColor: Color(0xFF43A047)),
-  LayananItem(id: 'jadwal_op', name: 'Jadwal Operasi', subtitle: 'RSUD Daha Husada', icon: Icons.schedule, iconColor: Color(0xFF1E88E5)),
-  LayananItem(id: 'antrian', name: 'Info Antrian Pasien', subtitle: 'RSUD Daha Husada', icon: Icons.people, iconColor: Color(0xFF1E88E5)),
-  LayananItem(id: 'pajak', name: 'Info Pajak Kendaraan Bermotor', subtitle: 'Bapenda Jatim', icon: Icons.receipt_long, iconColor: Color(0xFF1565C0)),
+  LayananItem(id: 'islamic_center', name: 'Islamic Center', subtitle: 'Islamic Center', icon: Icons.mosque, iconColor: Color(0xFF00897B)),
 ];
 
 class VisitorTerdaftarPage extends StatefulWidget {
@@ -66,10 +61,57 @@ class VisitorTerdaftarPage extends StatefulWidget {
 class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
   int _currentIndex = 0;
   List<String> _favoritIds = [];
+  List<LayananItem> _semuaLayananAktif = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLayanan();
+  }
+
+  Future<void> _fetchLayanan() async {
+    setState(() => _isLoading = true);
+    final features = await GatewayService.fetchActiveFeatures();
+    final List<LayananItem> aktif = [];
+    
+    for (var feature in features) {
+      if (feature['active'] == true) {
+        // Exclude sub-services so they don't clutter the home screen
+        final excludedKeys = ['info_njkb', 'info_pkb', 'rsud_haji_rooms', 'rsud_karsa_rooms', 'rsud_daha_surgeries', 'rsud_daha_queue'];
+        if (excludedKeys.contains(feature['key'])) {
+          continue;
+        }
+
+        // Cari referensi UI berdasar key dari backend
+        final ref = referensiLayanan.firstWhere(
+          (l) => l.id == feature['key'],
+          orElse: () => LayananItem(
+            id: feature['key'],
+            name: feature['name'] ?? 'Layanan',
+            icon: Icons.apps,
+          ),
+        );
+        aktif.add(LayananItem(
+          id: ref.id,
+          name: feature['name'] ?? ref.name,
+          subtitle: ref.subtitle,
+          icon: ref.icon,
+          iconColor: ref.iconColor,
+        ));
+      }
+    }
+
+    // Jika gagal fetch atau kosong, gunakan referensiLayanan sebagai fallback agar app tidak blank
+    setState(() {
+      _semuaLayananAktif = aktif.isNotEmpty ? aktif : referensiLayanan.take(8).toList();
+      _isLoading = false;
+    });
+  }
 
   // Layanan umum yang ditampilkan di home (8 pertama + Lainnya)
-  List<LayananItem> get _layananUmum => semuaLayanan.take(8).toList();
-  List<LayananItem> get _favoritLayanan => semuaLayanan.where((l) => _favoritIds.contains(l.id)).toList();
+  List<LayananItem> get _layananUmum => _semuaLayananAktif.take(8).toList();
+  List<LayananItem> get _favoritLayanan => _semuaLayananAktif.where((l) => _favoritIds.contains(l.id)).toList();
 
   void _onTabTapped(int index) {
     if (index == 3) {
@@ -99,33 +141,33 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
       return;
     }
 
-    if (id == 'klinik') {
+    if (id == 'klinik_hoaks') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const KlinikHoaksPage()));
     } else if (id == 'bapenda') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const BapendaJatimPage()));
-    } else if (id == 'islamic') {
+    } else if (id == 'islamic_center') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterPage()));
     } else if (id == 'rsud_haji') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiPage()));
-    } else if (id == 'info_kamar') {
+    } else if (id == 'rsud_haji_rooms') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudHajiKetersediaanKamarPage()));
-    } else if (id == 'skrining') {
+    } else if (id == 'skrining_tbc') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const SkriningTbcPage()));
     } else if (id == 'sapa_bansos') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const SapaBansosPage()));
-    } else if (id == 'point') {
+    } else if (id == 'point_jatim') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const PointJatimPage()));
-    } else if (id == 'rsud_karsa') {
+    } else if (id == 'rsud_karsa_husada') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaPage()));
-    } else if (id == 'ketersediaan') {
+    } else if (id == 'rsud_karsa_rooms') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudKarsaHusadaKetersediaanKamarPage()));
-    } else if (id == 'rsud_daha') {
+    } else if (id == 'rsud_daha_husada') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaPage()));
-    } else if (id == 'jadwal_op') {
+    } else if (id == 'rsud_daha_surgeries') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaJadwalOperasiPage()));
-    } else if (id == 'antrian') {
+    } else if (id == 'rsud_daha_queue') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const RsudDahaHusadaAntrianPage()));
-    } else if (id == 'darurat') {
+    } else if (id == 'nomor_darurat') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const NomorDaruratPage()));
     }
   }
@@ -270,31 +312,33 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
               // Layanan Umum
               const Text('Layanan Umum', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 14),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4, mainAxisSpacing: 12, crossAxisSpacing: 8, childAspectRatio: 0.75,
-                ),
-                itemCount: _layananUmum.length + 1, // +1 for "Lainnya"
-                itemBuilder: (context, index) {
-                  if (index == _layananUmum.length) {
-                    return _buildServiceTile(
-                      icon: Icons.more_horiz,
-                      label: 'Lainnya',
-                      color: const Color(0xFF9E9E9E),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SemuaLayananPage())),
-                    );
-                  }
-                  final item = _layananUmum[index];
-                  return _buildServiceTile(
-                    icon: item.icon,
-                    label: item.name,
-                    color: item.iconColor,
-                    onTap: () => _navigateToLayanan(item.id),
-                  );
-                },
-              ),
+              _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4, mainAxisSpacing: 12, crossAxisSpacing: 8, childAspectRatio: 0.75,
+                    ),
+                    itemCount: _layananUmum.length + 1, // +1 for "Lainnya"
+                    itemBuilder: (context, index) {
+                      if (index == _layananUmum.length) {
+                        return _buildServiceTile(
+                          icon: Icons.more_horiz,
+                          label: 'Lainnya',
+                          color: const Color(0xFF9E9E9E),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SemuaLayananPage())),
+                        );
+                      }
+                      final item = _layananUmum[index];
+                      return _buildServiceTile(
+                        icon: item.icon,
+                        label: item.name,
+                        color: item.iconColor,
+                        onTap: () => _navigateToLayanan(item.id),
+                      );
+                    },
+                  ),
               const SizedBox(height: 24),
 
               // Berita Terkini

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_application_1/kesehatan/rsud_haji_detail_kamar.dart';
+import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 // ─────────────────────────────────────────────
 // Data Model
@@ -34,140 +35,30 @@ class KamarData {
     if (tersedia <= 2) return 'Terbatas';
     return 'Tersedia';
   }
+
+  factory KamarData.fromJson(Map<String, dynamic> json) {
+    final kapasitasTotal = json['kapasitas_total'] ?? 0;
+    final kamarTersedia = json['kamar_tersedia'] ?? 0;
+    final terisi = kapasitasTotal - kamarTersedia;
+
+    return KamarData(
+      nama: json['kelas_kamar'] ?? '',
+      kategoriMedis: 'Reguler',
+      kelas: json['kelas_kamar'] ?? '',
+      jenisKelamin: 'Semua',
+      kapasitas: kapasitasTotal,
+      terisi: terisi,
+      tarif: 'Sesuai Kelas',
+      fasilitas: [],
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
 // Sample Data
 // ─────────────────────────────────────────────
 
-final List<KamarData> daftarKamar = [
-  KamarData(
-    nama: 'AMARILIS A',
-    kategoriMedis: 'Isolasi',
-    kelas: 'Kelas I',
-    jenisKelamin: 'Perempuan',
-    kapasitas: 6,
-    terisi: 1,
-    tarif: 'Rp 500.000/malam',
-    fasilitas: [
-      '2 Tempat Tidur',
-      '1 TV LED 24 inci',
-      '1 Kamar Mandi/WC',
-      '1 Pendingin Ruangan (AC)',
-      '1 Toilet Duduk & Shower',
-    ],
-  ),
-  KamarData(
-    nama: 'DAHLIA B',
-    kategoriMedis: 'Intensif',
-    kelas: 'Kelas II',
-    jenisKelamin: 'Laki-laki',
-    kapasitas: 6,
-    terisi: 1,
-    tarif: 'Rp 350.000/malam',
-    fasilitas: [
-      '2 Tempat Tidur',
-      '1 TV LED 24 inci',
-      '1 Pendingin Ruangan (AC)',
-      '1 Toilet Duduk & Shower',
-    ],
-  ),
-  KamarData(
-    nama: 'EDELWEIS',
-    kategoriMedis: 'Reguler',
-    kelas: 'Kelas III',
-    jenisKelamin: 'Campuran',
-    kapasitas: 6,
-    terisi: 1,
-    tarif: 'Rp 200.000/malam',
-    fasilitas: [
-      '3 Tempat Tidur',
-      '1 Pendingin Ruangan (AC)',
-      '1 Toilet Duduk',
-    ],
-  ),
-  KamarData(
-    nama: 'MAWAR VIP',
-    kategoriMedis: 'Reguler',
-    kelas: 'VIP',
-    jenisKelamin: 'Laki-laki',
-    kapasitas: 4,
-    terisi: 4,
-    tarif: 'Rp 750.000/malam',
-    fasilitas: [
-      '1 Tempat Tidur',
-      '1 TV LED 32 inci',
-      '1 Sofa Panjang',
-      '1 Pendingin Ruangan (AC)',
-      '1 Toilet Duduk & Shower',
-      '1 Kulkas Mini',
-    ],
-  ),
-  KamarData(
-    nama: 'MELATI VVIP',
-    kategoriMedis: 'Reguler',
-    kelas: 'VVIP',
-    jenisKelamin: 'Perempuan',
-    kapasitas: 2,
-    terisi: 1,
-    tarif: 'Rp 1.500.000/malam',
-    fasilitas: [
-      '1 Tempat Tidur Premium',
-      '1 TV LED 43 inci',
-      '1 Sofa Panjang',
-      '2 Pendingin Ruangan (AC)',
-      '1 Toilet Duduk & Shower',
-      '1 Kulkas Mini',
-      '1 Meja Makan',
-    ],
-  ),
-  KamarData(
-    nama: 'ANGGREK C',
-    kategoriMedis: 'Isolasi',
-    kelas: 'Kelas I',
-    jenisKelamin: 'Laki-laki',
-    kapasitas: 4,
-    terisi: 2,
-    tarif: 'Rp 500.000/malam',
-    fasilitas: [
-      '2 Tempat Tidur',
-      '1 TV LED 24 inci',
-      '1 Pendingin Ruangan (AC)',
-      '1 Toilet Duduk & Shower',
-    ],
-  ),
-  KamarData(
-    nama: 'KENANGA D',
-    kategoriMedis: 'Intensif',
-    kelas: 'Kelas II',
-    jenisKelamin: 'Perempuan',
-    kapasitas: 8,
-    terisi: 7,
-    tarif: 'Rp 350.000/malam',
-    fasilitas: [
-      '4 Tempat Tidur',
-      '1 TV LED 24 inci',
-      '1 Pendingin Ruangan (AC)',
-      '2 Toilet Duduk',
-    ],
-  ),
-  KamarData(
-    nama: 'FLAMBOYAN E',
-    kategoriMedis: 'Reguler',
-    kelas: 'Kelas III',
-    jenisKelamin: 'Campuran',
-    kapasitas: 10,
-    terisi: 5,
-    tarif: 'Rp 200.000/malam',
-    fasilitas: [
-      '5 Tempat Tidur',
-      '2 Pendingin Ruangan (AC)',
-      '2 Toilet Duduk',
-    ],
-  ),
-];
-
-// ─────────────────────────────────────────────
+// Removed mock daftarKamar// ─────────────────────────────────────────────
 // Filter State
 // ─────────────────────────────────────────────
 
@@ -224,15 +115,31 @@ class _RsudHajiKetersediaanKamarPageState
     extends State<RsudHajiKetersediaanKamarPage> {
   final FilterState _filter = FilterState();
   late DateTime _lastUpdated;
+  
+  final RsudService _rsudService = RsudService();
+  bool _isLoading = true;
+  List<KamarData> _rooms = [];
 
   @override
   void initState() {
     super.initState();
     _lastUpdated = DateTime.now();
+    _fetchRooms();
+  }
+
+  Future<void> _fetchRooms() async {
+    setState(() => _isLoading = true);
+    final data = await _rsudService.fetchRooms('haji');
+    if (mounted) {
+      setState(() {
+        _rooms = data.map((e) => KamarData.fromJson(e as Map<String, dynamic>)).toList();
+        _isLoading = false;
+      });
+    }
   }
 
   List<KamarData> get _filteredKamar {
-    return daftarKamar.where((kamar) {
+    return _rooms.where((kamar) {
       if (_filter.jenisKelamin != 'Semua' &&
           kamar.jenisKelamin != _filter.jenisKelamin) {
         return false;
@@ -257,6 +164,7 @@ class _RsudHajiKetersediaanKamarPageState
     setState(() {
       _lastUpdated = DateTime.now();
     });
+    _fetchRooms();
   }
 
   void _showFilterDialog() async {
@@ -658,7 +566,12 @@ class _RsudHajiKetersediaanKamarPageState
                       child: _buildKamarCard(kamar),
                     ),
                   ),
-                  if (filteredList.isEmpty)
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (filteredList.isEmpty)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 40),
@@ -689,7 +602,7 @@ class _RsudHajiKetersediaanKamarPageState
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Text(
-                'Menampilkan ${filteredList.length} dari ${daftarKamar.length} kamar',
+                'Menampilkan ${filteredList.length} dari ${_rooms.length} kamar',
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11,

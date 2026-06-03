@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 class OperasiDaha {
   final String waktu;
@@ -16,42 +17,34 @@ class OperasiDaha {
     required this.status,
     required this.tanggal,
   });
-}
 
-final List<OperasiDaha> mockOperasi = [
-  OperasiDaha(
-    tanggal: 'Rabu, 1 April 2026',
-    waktu: '09.00',
-    namaOperasi: 'Amputasi Digiti',
-    klinik: 'IGD',
-    dokter: 'dr. DEDDY ARYANDA PUTRA, Sp.B. M.Ked.Klin',
-    status: 'Sedang Berjalan',
-  ),
-  OperasiDaha(
-    tanggal: 'Rabu, 1 April 2026',
-    waktu: '12.00',
-    namaOperasi: 'Phaco',
-    klinik: 'Klinik Mata',
-    dokter: 'dr. DARWAN TRIYONO, Sp.M',
-    status: 'Terjadwal',
-  ),
-  OperasiDaha(
-    tanggal: 'Kamis, 2 April 2026',
-    waktu: '09.00',
-    namaOperasi: 'Amputasi Digiti',
-    klinik: 'IGD',
-    dokter: 'dr. DEDDY ARYANDA PUTRA, Sp.B. M.Ked.Klin',
-    status: 'Dibatalkan',
-  ),
-  OperasiDaha(
-    tanggal: 'Kamis, 2 April 2026',
-    waktu: '12.00',
-    namaOperasi: 'Phaco',
-    klinik: 'Klinik Mata',
-    dokter: 'dr. DARWAN TRIYONO, Sp.M',
-    status: 'Terjadwal',
-  ),
-];
+  factory OperasiDaha.fromJson(Map<String, dynamic> json) {
+    String waktu = '';
+    String tanggal = '';
+    if (json['jadwal_mulai'] != null) {
+      try {
+        final dt = DateTime.parse(json['jadwal_mulai']).toLocal();
+        waktu = '${dt.hour.toString().padLeft(2, '0')}.${dt.minute.toString().padLeft(2, '0')}';
+        tanggal = '${dt.day} ${_getMonthName(dt.month)} ${dt.year}';
+      } catch (_) {}
+    }
+
+    return OperasiDaha(
+      waktu: waktu,
+      namaOperasi: json['ruangan_operasi'] ?? '',
+      klinik: 'Bedah',
+      dokter: json['dokter_nama'] ?? '',
+      status: json['status'] == 'Scheduled' ? 'Terjadwal' : (json['status'] ?? 'Terjadwal'),
+      tanggal: tanggal,
+    );
+  }
+
+  static String _getMonthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    if (month >= 1 && month <= 12) return months[month - 1];
+    return '';
+  }
+}
 
 class RsudDahaHusadaJadwalOperasiPage extends StatefulWidget {
   const RsudDahaHusadaJadwalOperasiPage({super.key});
@@ -61,7 +54,37 @@ class RsudDahaHusadaJadwalOperasiPage extends StatefulWidget {
 }
 
 class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOperasiPage> {
+  final RsudService _rsudService = RsudService();
+  bool _isLoading = true;
+  List<OperasiDaha> _surgeries = [];
   int _selectedTabIndex = 0; // 0 = Semua, 1 = Anda
+  String _lastUpdated = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTimestamp();
+    _fetchSurgeries();
+  }
+
+  void _updateTimestamp() {
+    final now = DateTime.now();
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    setState(() {
+      _lastUpdated = '${now.day} ${months[now.month - 1]} ${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
+  }
+
+  Future<void> _fetchSurgeries() async {
+    setState(() => _isLoading = true);
+    final data = await _rsudService.fetchSurgeries('daha');
+    if (mounted) {
+      setState(() {
+        _surgeries = data.map((e) => OperasiDaha.fromJson(e as Map<String, dynamic>)).toList();
+        _isLoading = false;
+      });
+    }
+  }
 
   void _showFilterModal() {
     showModalBottomSheet(
@@ -109,12 +132,15 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Terakhir diperbarui: 1 April 2026 10:05:23',
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
+                  Text(
+                    'Terakhir diperbarui: $_lastUpdated',
+                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      _updateTimestamp();
+                      _fetchSurgeries();
+                    },
                     icon: const Icon(Icons.refresh, size: 14, color: Color(0xFF2979FF)),
                     label: const Text('Refresh', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
                     style: OutlinedButton.styleFrom(
@@ -146,11 +172,11 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        _buildSummaryBox('18', 'Total\nOperasi', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                        _buildSummaryBox(_surgeries.length.toString(), 'Total\nOperasi', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
                         const SizedBox(width: 12),
-                        _buildSummaryBox('3', 'Terjadwal', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+                        _buildSummaryBox(_surgeries.where((e) => e.status == 'Terjadwal').length.toString(), 'Terjadwal', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
                         const SizedBox(width: 12),
-                        _buildSummaryBox('15', 'Selesai', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
+                        _buildSummaryBox(_surgeries.where((e) => e.status == 'Selesai').length.toString(), 'Selesai', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
                       ],
                     ),
                   ],
@@ -216,7 +242,11 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
               const SizedBox(height: 24),
 
               // List grouped by Tanggal
-              _buildJadwalList(),
+              _isLoading
+                  ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
+                  : _surgeries.isEmpty
+                      ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada jadwal operasi')))
+                      : _buildJadwalList(),
               
               const SizedBox(height: 32),
             ],
@@ -273,9 +303,9 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
   }
 
   Widget _buildJadwalList() {
-    // Grouping logic for the mock data
+    // Grouping logic for the data
     final grouped = <String, List<OperasiDaha>>{};
-    for (var op in mockOperasi) {
+    for (var op in _surgeries) {
       if (grouped.containsKey(op.tanggal)) {
         grouped[op.tanggal]!.add(op);
       } else {
@@ -328,66 +358,75 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Left Waktu
-          IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              alignment: Alignment.topCenter,
-              decoration: const BoxDecoration(
-                border: Border(right: BorderSide(color: Color(0xFFE5E7EB))),
-              ),
-              child: Text(
-                op.waktu,
-                style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
-              ),
-            ),
-          ),
-          // Right Details
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(op.namaOperasi, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFFD1D5DB)),
-                      borderRadius: BorderRadius.circular(16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {},
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Left Waktu
+                IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                    alignment: Alignment.topCenter,
+                    decoration: const BoxDecoration(
+                      border: Border(right: BorderSide(color: Color(0xFFE5E7EB))),
                     ),
-                    child: Text(op.klinik, style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Color(0xFF6B7280))),
+                    child: Text(
+                      op.waktu,
+                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(op.dokter, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
-                  const SizedBox(height: 12),
-                  // Status Badge Outlined
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: statusColor),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                ),
+                // Right Details
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(statusIcon, size: 12, color: statusColor),
-                        const SizedBox(width: 4),
-                        Text(op.status, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: statusColor)),
+                        Text(op.namaOperasi, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFFD1D5DB)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(op.klinik, style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Color(0xFF6B7280))),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(op.dokter, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
+                        const SizedBox(height: 12),
+                        // Status Badge Outlined
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: statusColor),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(statusIcon, size: 12, color: statusColor),
+                              const SizedBox(width: 4),
+                              Text(op.status, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: statusColor)),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/darurat/nomor_darurat_detail.dart';
+import 'package:flutter_application_1/darurat/services/emergency_service.dart';
 
 class NomorDaruratWilayahPage extends StatefulWidget {
   const NomorDaruratWilayahPage({super.key});
@@ -9,54 +10,28 @@ class NomorDaruratWilayahPage extends StatefulWidget {
 }
 
 class _NomorDaruratWilayahPageState extends State<NomorDaruratWilayahPage> {
-  final List<String> _allWilayah = [
-    'Kota Batu, Jawa Timur',
-    'Kota Blitar, Jawa Timur',
-    'Kota Kediri, Jawa Timur',
-    'Kota Madiun, Jawa Timur',
-    'Kota Malang, Jawa Timur',
-    'Kota Mojokerto, Jawa Timur',
-    'Kota Surabaya, Jawa Timur',
-    'Kota Pasuruan, Jawa Timur',
-    'Kota Probolinggo, Jawa Timur',
-    'Kabupaten Banyuwangi, Jawa Timur',
-    'Kabupaten Tuban, Jawa Timur',
-    'Kabupaten Bondowoso, Jawa Timur',
-    'Kabupaten Lamongan, Jawa Timur',
-    'Kabupaten Lumajang, Jawa Timur',
-    'Kabupaten Pacitan, Jawa Timur',
-    'Kabupaten Pamekasan, Jawa Timur',
-    'Kabupaten Sampang, Jawa Timur',
-    'Kabupaten Sidoarjo, Jawa Timur',
-    'Kabupaten Trenggalek, Jawa Timur',
-    'Kabupaten Tulungagung, Jawa Timur',
-    'Kabupaten Jember, Jawa Timur',
-    'Kabupaten Jombang, Jawa Timur',
-    'Kabupaten Ponorogo, Jawa Timur',
-    'Kabupaten Kediri, Jawa Timur',
-    'Kabupaten Madiun, Jawa Timur',
-    'Kabupaten Magetan, Jawa Timur',
-    'Kabupaten Malang, Jawa Timur',
-    'Kabupaten Mojokerto, Jawa Timur',
-    'Kabupaten Nganjuk, Jawa Timur',
-    'Kabupaten Ngawi, Jawa Timur',
-    'Kabupaten Pasuruan, Jawa Timur',
-    'Kabupaten Probolinggo, Jawa Timur',
-    'Kabupaten Situbondo, Jawa Timur',
-    'Kabupaten Sumenep, Jawa Timur',
-    'Kabupaten Bangkalan, Jawa Timur',
-    'Kabupaten Blitar, Jawa Timur',
-    'Kabupaten Bojonegoro, Jawa Timur',
-    'Kabupaten Gresik, Jawa Timur',
-  ];
-
+  List<String> _allWilayah = [];
   List<String> _filteredWilayah = [];
   final TextEditingController _searchCtrl = TextEditingController();
+  final EmergencyService _emergencyService = EmergencyService();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredWilayah = _allWilayah;
+    _fetchRegions();
+  }
+
+  Future<void> _fetchRegions() async {
+    setState(() => _isLoading = true);
+    final regions = await _emergencyService.fetchRegions();
+    if (mounted) {
+      setState(() {
+        _allWilayah = regions;
+        _filteredWilayah = regions;
+        _isLoading = false;
+      });
+    }
   }
 
   void _filter(String query) {
@@ -141,13 +116,15 @@ class _NomorDaruratWilayahPageState extends State<NomorDaruratWilayahPage> {
 
           // List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-              itemCount: _filteredWilayah.length,
-              itemBuilder: (context, index) {
-                return _buildWilayahItem(context, _filteredWilayah[index]);
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                    itemCount: _filteredWilayah.length,
+                    itemBuilder: (context, index) {
+                      return _buildWilayahItem(context, _filteredWilayah[index]);
+                    },
+                  ),
           ),
         ],
       ),

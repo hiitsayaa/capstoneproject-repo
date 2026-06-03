@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 class RsudDahaHusadaAntrianPage extends StatefulWidget {
   const RsudDahaHusadaAntrianPage({super.key});
@@ -17,6 +18,21 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
 
   // States for Ambil Nomor Antrian (Wizard)
   int _wizardStep = 0; // 0: Pendaftaran, 1: Pilih Jadwal, 2: Konfirmasi, 3: Nomor Antrian
+  final RsudService _rsudService = RsudService();
+  bool _isSubmitting = false;
+  String _queueNumber = '';
+  String _queueTime = '';
+  String _lastUpdatedCek = '';
+  List<dynamic> _queueList = [];
+  bool _isLoadingQueues = false;
+
+  void _updateTimestampCek() {
+    final now = DateTime.now();
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    setState(() {
+      _lastUpdatedCek = '${now.day} ${months[now.month - 1]} ${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
+  }
   
   // Step 1 Data
   final TextEditingController _namaCtrl = TextEditingController();
@@ -27,14 +43,12 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
   int _selectedScheduleIndex = -1;
 
   final List<String> _poliList = [
-    'IGD', 'Klinik Mata', 'Klinik Penyakit Dalam', 'Klinik Kulit Kelamin', 
-    'Klinik Bedah', 'Klinik Jantung', 'Klinik Kusta', 'Klinik Kebidanan', 
-    'Klinik Anak', 'Klinik Umum', 'Klinik THT-KL', 'Klinik Gigi Umum'
+    'Umum', 'Penyakit Dalam'
   ];
 
   final List<String> _dokterList = [
-    'dr. Darwan Triyono, Sp.M',
-    'Dr. Richard'
+    'dr. Sekar Ayu',
+    'dr. Bagas Pratama'
   ];
 
   @override
@@ -155,7 +169,9 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
             child: ElevatedButton(
               onPressed: () {
                 if (_cekPoli != null && _cekDokter != null) {
+                  _updateTimestampCek();
                   setState(() => _showCekResult = true);
+                  _fetchQueues();
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih poli dan dokter terlebih dahulu')));
                 }
@@ -185,109 +201,76 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
               children: [
                 const Text('Data Antrian Saat Ini', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
                 const SizedBox(height: 4),
-                const Text('Terakhir diperbarui: 2 April 2026, 08:45:00', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
+                Text('Terakhir diperbarui: $_lastUpdatedCek', style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
                 const SizedBox(height: 16),
                 
-                // Table
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                    borderRadius: BorderRadius.circular(8),
+                if (_isLoadingQueues)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_queueList.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 24),
+                    child: Center(
+                      child: Text('Tidak ada antrian untuk filter ini.', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
+                    ),
+                  )
+                else
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        // Header
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF9FAFB),
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                            border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(child: Text('No. Antrian', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)))),
+                              Expanded(child: Text('Jam Perkiraan', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)))),
+                              Expanded(child: Text('Status', textAlign: TextAlign.right, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)))),
+                            ],
+                          ),
+                        ),
+                        ..._queueList.map((q) {
+                          final isLast = _queueList.last == q;
+                          return _buildQueueRow(q, isLast);
+                        }),
+                      ],
+                    ),
                   ),
-                  child: Column(
+                
+                if (_queueList.isNotEmpty && !_isLoadingQueues) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text('Menampilkan 1-${_queueList.length} dari ${_queueList.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Header
+                      const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
+                      const SizedBox(width: 16),
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-                          border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(child: Text('No. Antrian', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)))),
-                            Expanded(child: Text('Jam Perkiraan', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)))),
-                            Expanded(child: Text('Status', textAlign: TextAlign.right, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)))),
-                          ],
-                        ),
+                        width: 28,
+                        height: 28,
+                        decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
+                        child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
                       ),
-                      // Row 1
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB)))),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Expanded(child: Text('A-001', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)))),
-                            const Expanded(child: Text('08:00 - 08:15', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF374151)))),
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(color: const Color(0xFF43A047)),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text('Terlayani', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF43A047))),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Row 2
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Expanded(child: Text('A-002', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)))),
-                            const Expanded(child: Text('08:15 - 08:30', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF374151)))),
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(color: const Color(0xFFF57C00)),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text('Menunggu', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFFF57C00))),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
                     ],
                   ),
-                ),
-                
-                const SizedBox(height: 16),
-                const Center(
-                  child: Text('Menampilkan 1-2 dari 2 hasil', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
-                    const SizedBox(width: 16),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
-                      child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
-                    ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
-                  ],
-                ),
+                ],
                 const SizedBox(height: 40),
               ],
             ),
@@ -333,7 +316,7 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: _isSubmitting ? null : () async {
                 if (_wizardStep == 0) {
                   if (_namaCtrl.text.isEmpty || _daftarPoli == null || _daftarTanggal == null) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lengkapi form terlebih dahulu')));
@@ -347,14 +330,42 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
                   }
                   setState(() => _wizardStep = 2);
                 } else if (_wizardStep == 2) {
-                  setState(() => _wizardStep = 3);
+                  setState(() => _isSubmitting = true);
+                  
+                  String selectedTime = '08:00 - 12:00';
+                  if (_selectedScheduleIndex == 1) selectedTime = '08:30 - 12:00';
+                  if (_selectedScheduleIndex == 2) selectedTime = '09:00 - 12:00';
+                  if (_selectedScheduleIndex == 3) selectedTime = '09:30 - 12:00';
+                  
+                  final result = await _rsudService.createQueue('daha', {
+                    'nik': '3573010101010001', // dummy NIK since user doesn't input it
+                    'dokter_nama': _selectedScheduleIndex < 2 ? 'dr. Sekar Ayu' : 'dr. Bagas Pratama',
+                    'spesialisasi': _daftarPoli ?? 'Umum',
+                    'tanggal_kunjungan': _daftarTanggal ?? '2026-04-01',
+                  });
+
+                  setState(() => _isSubmitting = false);
+
+                  if (result != null) {
+                    setState(() {
+                      _queueNumber = result['nomor_antrian'] ?? 'A-001';
+                      _queueTime = selectedTime;
+                      _wizardStep = 3;
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuat antrean')));
+                  }
                 } else {
                   // Selesai -> reset to Cek Antrian
                   setState(() {
                     _selectedMainTab = 0;
                     _wizardStep = 0;
                     _showCekResult = true; // Show result directly to simulate finding it
+                    _cekPoli = _daftarPoli ?? 'Umum';
+                    _cekDokter = _selectedScheduleIndex < 2 ? 'dr. Sekar Ayu' : 'dr. Bagas Pratama';
                   });
+                  _updateTimestampCek();
+                  _fetchQueues();
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -362,10 +373,12 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: Text(
-                _wizardStep == 3 ? 'Selesai' : 'Selanjutnya', 
-                style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)
-              ),
+              child: _isSubmitting 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text(
+                    _wizardStep == 3 ? 'Selesai' : 'Selanjutnya', 
+                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)
+                  ),
             ),
           ),
         ),
@@ -446,8 +459,16 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
             const Text('Pilih Tanggal Daftar', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF1A1A1A))),
             const SizedBox(height: 6),
             GestureDetector(
-              onTap: () {
-                setState(() => _daftarTanggal = '1 April 2026'); // Mock date picker
+              onTap: () async {
+                final dt = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 30)),
+                );
+                if (dt != null) {
+                  setState(() => _daftarTanggal = dt.toIso8601String().split('T')[0]);
+                }
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -476,10 +497,10 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
             const Text('Pilih jadwal sesuai kebutuhan Anda', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
             const SizedBox(height: 24),
             
-            _buildRadioOption(0, 'Dr. Richard', '08:00 - 12:00'),
-            _buildRadioOption(1, 'Dr. Richard', '08:30 - 12:00'),
-            _buildRadioOption(2, 'Dr. Richard', '09:00 - 12:00'),
-            _buildRadioOption(3, 'Dr. Richard', '09:30 - 12:00'),
+            _buildRadioOption(0, 'dr. Sekar Ayu', '08:00 - 12:00'),
+            _buildRadioOption(1, 'dr. Sekar Ayu', '08:30 - 12:00'),
+            _buildRadioOption(2, 'dr. Bagas Pratama', '09:00 - 12:00'),
+            _buildRadioOption(3, 'dr. Bagas Pratama', '09:30 - 12:00'),
           ],
         );
 
@@ -503,9 +524,9 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
                   const Divider(height: 1),
                   _buildConfItem(Icons.local_hospital_outlined, 'Poli', _daftarPoli ?? 'Umum'),
                   const Divider(height: 1),
-                  _buildConfItem(Icons.calendar_today_outlined, 'Tanggal', _daftarTanggal ?? '1 April 2026'),
+                  _buildConfItem(Icons.calendar_today_outlined, 'Tanggal', _daftarTanggal ?? '2026-04-01'),
                   const Divider(height: 1),
-                  _buildConfItem(Icons.person_outline, 'Nama Dokter', 'Dr. Richard'),
+                  _buildConfItem(Icons.person_outline, 'Nama Dokter', _selectedScheduleIndex < 2 ? 'dr. Sekar Ayu' : 'dr. Bagas Pratama'),
                   const Divider(height: 1),
                   _buildConfItem(Icons.access_time, 'Jadwal', '08:00 - 12:00'),
                 ],
@@ -536,12 +557,12 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text('A-005', style: TextStyle(fontFamily: 'Poppins', fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+              child: Text(_queueNumber, style: const TextStyle(fontFamily: 'Poppins', fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
             ),
             const SizedBox(height: 24),
             const Text('Perkiraan Dipanggil:', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
             const SizedBox(height: 4),
-            const Text('09:00 - 09:30', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+            Text(_queueTime, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
           ],
         );
 
@@ -630,6 +651,76 @@ class _RsudDahaHusadaAntrianPageState extends State<RsudDahaHusadaAntrianPage> {
                 const SizedBox(height: 2),
                 Text(value, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _fetchQueues() async {
+    setState(() => _isLoadingQueues = true);
+    final data = await _rsudService.fetchQueues(
+      'daha',
+      spesialisasi: _cekPoli,
+      dokterNama: _cekDokter,
+    );
+    if (mounted) {
+      setState(() {
+        _queueList = data;
+        _isLoadingQueues = false;
+      });
+    }
+  }
+
+  Widget _buildQueueRow(Map<String, dynamic> q, bool isLast) {
+    final status = q['status'] ?? 'Waiting';
+    final noAntrian = q['nomor_antrian'] ?? '-';
+    // extract index from A-001
+    int index = 0;
+    try {
+      if (noAntrian.toString().contains('-')) {
+        index = int.parse(noAntrian.split('-')[1]) - 1;
+      }
+    } catch (_) {}
+    
+    // 08:00 + (15 mins * index)
+    final hour = 8 + (index * 15) ~/ 60;
+    final min = (index * 15) % 60;
+    final hourEnd = 8 + ((index + 1) * 15) ~/ 60;
+    final minEnd = ((index + 1) * 15) % 60;
+    final timeStr = '${hour.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')} - ${hourEnd.toString().padLeft(2, '0')}:${minEnd.toString().padLeft(2, '0')}';
+
+    Color statusColor = const Color(0xFFF57C00); // Waiting
+    String statusText = 'Menunggu';
+    if (status.toString().toLowerCase() == 'completed') {
+      statusColor = const Color(0xFF43A047);
+      statusText = 'Selesai';
+    } else if (status.toString().toLowerCase() == 'terlayani') {
+      statusColor = const Color(0xFF43A047);
+      statusText = 'Terlayani';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFE5E7EB)))),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Text(noAntrian, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)))),
+          Expanded(child: Text(timeStr, textAlign: TextAlign.center, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF374151)))),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: statusColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(statusText, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: statusColor)),
+              ),
             ),
           ),
         ],

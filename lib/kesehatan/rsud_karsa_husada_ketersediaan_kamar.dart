@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/kesehatan/rsud_karsa_husada_detail_kamar.dart';
+import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 class KamarRawatKarsa {
   final String nama;
@@ -21,13 +22,23 @@ class KamarRawatKarsa {
     required this.terisi,
     required this.tersedia,
   });
-}
+  factory KamarRawatKarsa.fromJson(Map<String, dynamic> json) {
+    final kapasitasTotal = json['kapasitas_total'] ?? 0;
+    final kamarTersedia = json['kamar_tersedia'] ?? 0;
+    final terisi = kapasitasTotal - kamarTersedia;
 
-final List<KamarRawatKarsa> mockKamarKarsa = [
-  KamarRawatKarsa(nama: 'AMARILIS A', kategori: 'Isolasi', status: 'Tersedia', kelas: 'Kelas I', jenisKelamin: 'Perempuan', kapasitas: 6, terisi: 1, tersedia: 5),
-  KamarRawatKarsa(nama: 'CVCU', kategori: 'Intensif', status: 'Tersedia', kelas: 'Kelas I', jenisKelamin: 'Laki-laki', kapasitas: 6, terisi: 1, tersedia: 5),
-  KamarRawatKarsa(nama: 'EDELWEIS', kategori: 'Isolasi', status: 'Terbatas', kelas: 'Kelas I', jenisKelamin: 'Perempuan', kapasitas: 6, terisi: 1, tersedia: 5),
-];
+    return KamarRawatKarsa(
+      nama: json['kelas_kamar'] ?? '',
+      kategori: 'Reguler',
+      status: kamarTersedia > 0 ? 'Tersedia' : 'Penuh',
+      kelas: json['kelas_kamar'] ?? '',
+      jenisKelamin: 'Semua',
+      kapasitas: kapasitasTotal,
+      terisi: terisi,
+      tersedia: kamarTersedia,
+    );
+  }
+}
 
 class RsudKarsaHusadaKetersediaanKamarPage extends StatefulWidget {
   const RsudKarsaHusadaKetersediaanKamarPage({super.key});
@@ -37,6 +48,39 @@ class RsudKarsaHusadaKetersediaanKamarPage extends StatefulWidget {
 }
 
 class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKetersediaanKamarPage> {
+  final RsudService _rsudService = RsudService();
+  bool _isLoading = true;
+  List<KamarRawatKarsa> _rooms = [];
+  String _lastUpdated = '';
+  
+  @override
+  void initState() {
+    super.initState();
+    _updateTimestamp();
+    _fetchRooms();
+  }
+
+  void _updateTimestamp() {
+    final now = DateTime.now();
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    setState(() {
+      _lastUpdated = '${now.day} ${months[now.month - 1]} ${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
+  }
+
+  Future<void> _fetchRooms() async {
+    setState(() => _isLoading = true);
+    // RSUD Karsa Husada uses the ID: karsa (or the UUID from database, we mapped 'karsa' in our demo script)
+    // Actually our previous script used 'karsa' in RsudController or gateway route.
+    final data = await _rsudService.fetchRooms('karsa');
+    if (mounted) {
+      setState(() {
+        _rooms = data.map((e) => KamarRawatKarsa.fromJson(e as Map<String, dynamic>)).toList();
+        _isLoading = false;
+      });
+    }
+  }
+
   void _showFilterModal() {
     showModalBottomSheet(
       context: context,
@@ -83,12 +127,15 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Terakhir diperbarui: 20 Maret 2026 10:05:23',
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
+                  Text(
+                    'Terakhir diperbarui: $_lastUpdated',
+                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      _updateTimestamp();
+                      _fetchRooms();
+                    },
                     icon: const Icon(Icons.refresh, size: 14, color: Color(0xFF2979FF)),
                     label: const Text('Refresh', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
                     style: OutlinedButton.styleFrom(
@@ -107,11 +154,17 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _buildSummaryBox('18', 'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                  _buildSummaryBox(
+                      _rooms.fold(0, (sum, item) => sum + item.kapasitas).toString(),
+                      'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
                   const SizedBox(width: 12),
-                  _buildSummaryBox('3', 'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+                  _buildSummaryBox(
+                      _rooms.fold(0, (sum, item) => sum + item.terisi).toString(),
+                      'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
                   const SizedBox(width: 12),
-                  _buildSummaryBox('15', 'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
+                  _buildSummaryBox(
+                      _rooms.fold(0, (sum, item) => sum + item.tersedia).toString(),
+                      'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
                 ],
               ),
               const SizedBox(height: 32),
@@ -137,13 +190,25 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
               const SizedBox(height: 12),
 
               // List of Rooms
-              ...mockKamarKarsa.map((kamar) => _buildRoomCard(kamar)),
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_rooms.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: Text('Tidak ada data kamar')),
+                )
+              else
+                ..._rooms.map((kamar) => _buildRoomCard(kamar)),
               
               const SizedBox(height: 16),
               // Pagination Placeholder
-              const Center(
-                child: Text('Menampilkan 1-3 dari 3 hasil', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
-              ),
+              if (!_isLoading && _rooms.isNotEmpty) ...[
+                Center(
+                  child: Text('Menampilkan 1-${_rooms.length} dari ${_rooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -160,6 +225,7 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
                   const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
                 ],
               ),
+              ],
               const SizedBox(height: 32),
             ],
           ),

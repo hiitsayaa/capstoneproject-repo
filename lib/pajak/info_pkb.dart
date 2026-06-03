@@ -1,9 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/pajak/cek_pajak_lain.dart';
 import 'package:flutter_application_1/pajak/detail_kendaraan.dart';
+import 'package:flutter_application_1/pajak/services/bapenda_service.dart';
 
-class InfoPkbPage extends StatelessWidget {
+class InfoPkbPage extends StatefulWidget {
   const InfoPkbPage({super.key});
+
+  @override
+  State<InfoPkbPage> createState() => _InfoPkbPageState();
+}
+
+class _InfoPkbPageState extends State<InfoPkbPage> {
+  final BapendaService _bapendaService = BapendaService();
+  bool _isLoading = true;
+  List<dynamic> _myVehicles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchVehicles();
+  }
+
+  Future<void> _fetchVehicles() async {
+    final vehicles = await _bapendaService.fetchMyVehicles();
+    if (mounted) {
+      setState(() {
+        _myVehicles = vehicles;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,89 +53,101 @@ class InfoPkbPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Informasi Kendaraan Anda',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A1A),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Informasi Kendaraan Anda',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Anda memiliki ${_myVehicles.length} kendaraan bermotor',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Generate cards based on _myVehicles
+                  if (_myVehicles.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Tidak ada data kendaraan ditemukan.',
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280)),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._myVehicles.map((vehicle) {
+                      // Ini contoh mapping sederhana. Di API asli, status pembayaran mungkin butuh dicek di tagihan.
+                      // Untuk sementara, kita asumsikan jika tidak ada tagihan, maka statusnya belum bayar (dummy logic).
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildVehicleCard(
+                          context,
+                          merk: (vehicle['merk'] as String?)?.toUpperCase() ?? 'UNKNOWN',
+                          nopol: vehicle['nopol'] ?? '-',
+                          jatuhTempo: 'Segera', // Idealnya diambil dari tagihan terbaru
+                          isPaid: false,
+                          iconData: Icons.directions_car,
+                        ),
+                      );
+                    }).toList(),
+
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    'Informasi Pajak Kendaraan',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Menu Cek Pajak Kendaraan Pribadi
+                  _buildMenuAction(
+                    icon: Icons.directions_car_outlined,
+                    title: 'Cek Pajak Kendaraan Pribadi',
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Menu Cek Pajak Kendaraan Lain
+                  _buildMenuAction(
+                    icon: Icons.search,
+                    title: 'Cek Pajak Kendaraan Lain',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CekPajakLainPage()),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Anda memiliki 2 kendaraan bermotor',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                color: Color(0xFF6B7280),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Card 1: Honda (Belum dibayar)
-            _buildVehicleCard(
-              context,
-              merk: 'HONDA',
-              nopol: 'N 3579 ANA',
-              jatuhTempo: '25-12-2025',
-              isPaid: false,
-              iconData: Icons.two_wheeler,
-            ),
-            const SizedBox(height: 16),
-
-            // Card 2: Mazda (Sudah dibayar)
-            _buildVehicleCard(
-              context,
-              merk: 'MAZDA',
-              nopol: 'L 54 SA',
-              jatuhTempo: '25-12-2025',
-              isPaid: true,
-              paidDate: '12-12-2025',
-              iconData: Icons.directions_car,
-            ),
-            const SizedBox(height: 32),
-
-            const Text(
-              'Informasi Pajak Kendaraan',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Menu Cek Pajak Kendaraan Pribadi
-            _buildMenuAction(
-              icon: Icons.directions_car_outlined,
-              title: 'Cek Pajak Kendaraan Pribadi',
-              onTap: () {
-                // Future implementation if needed
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Menu Cek Pajak Kendaraan Lain
-            _buildMenuAction(
-              icon: Icons.search,
-              title: 'Cek Pajak Kendaraan Lain',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CekPajakLainPage()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
     );
   }
 

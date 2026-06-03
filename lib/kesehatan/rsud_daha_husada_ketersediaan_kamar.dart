@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 class KamarRawatDaha {
   final String nama;
@@ -20,13 +21,24 @@ class KamarRawatDaha {
     required this.terisi,
     required this.tersedia,
   });
-}
 
-final List<KamarRawatDaha> mockKamarDaha = [
-  KamarRawatDaha(nama: 'AMARILIS A', kategori: 'Isolasi', status: 'Tersedia', kelas: 'Kelas I', jenisKelamin: 'Perempuan', kapasitas: 6, terisi: 1, tersedia: 5),
-  KamarRawatDaha(nama: 'CVCU', kategori: 'Intensif', status: 'Tersedia', kelas: 'Kelas I', jenisKelamin: 'Laki-laki', kapasitas: 6, terisi: 1, tersedia: 5),
-  KamarRawatDaha(nama: 'EDELWEIS', kategori: 'Isolasi', status: 'Terbatas', kelas: 'Kelas I', jenisKelamin: 'Perempuan', kapasitas: 6, terisi: 1, tersedia: 5),
-];
+  factory KamarRawatDaha.fromJson(Map<String, dynamic> json) {
+    final kapasitasTotal = json['kapasitas_total'] ?? 0;
+    final kamarTersedia = json['kamar_tersedia'] ?? 0;
+    final terisi = kapasitasTotal - kamarTersedia;
+
+    return KamarRawatDaha(
+      nama: json['kelas_kamar'] ?? '',
+      kategori: 'Reguler',
+      status: kamarTersedia > 0 ? 'Tersedia' : 'Penuh',
+      kelas: json['kelas_kamar'] ?? '',
+      jenisKelamin: 'Semua',
+      kapasitas: kapasitasTotal,
+      terisi: terisi,
+      tersedia: kamarTersedia,
+    );
+  }
+}
 
 class RsudDahaHusadaKetersediaanKamarPage extends StatefulWidget {
   const RsudDahaHusadaKetersediaanKamarPage({super.key});
@@ -36,6 +48,37 @@ class RsudDahaHusadaKetersediaanKamarPage extends StatefulWidget {
 }
 
 class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKetersediaanKamarPage> {
+  final RsudService _rsudService = RsudService();
+  bool _isLoading = true;
+  List<KamarRawatDaha> _rooms = [];
+  String _lastUpdated = '';
+  
+  @override
+  void initState() {
+    super.initState();
+    _updateTimestamp();
+    _fetchRooms();
+  }
+
+  void _updateTimestamp() {
+    final now = DateTime.now();
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    setState(() {
+      _lastUpdated = '${now.day} ${months[now.month - 1]} ${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
+  }
+
+  Future<void> _fetchRooms() async {
+    setState(() => _isLoading = true);
+    final data = await _rsudService.fetchRooms('daha');
+    if (mounted) {
+      setState(() {
+        _rooms = data.map((e) => KamarRawatDaha.fromJson(e as Map<String, dynamic>)).toList();
+        _isLoading = false;
+      });
+    }
+  }
+
   void _showFilterModal() {
     showModalBottomSheet(
       context: context,
@@ -82,12 +125,15 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Terakhir diperbarui: 20 Maret 2026 10:05:23',
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
+                  Text(
+                    'Terakhir diperbarui: $_lastUpdated',
+                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      _updateTimestamp();
+                      _fetchRooms();
+                    },
                     icon: const Icon(Icons.refresh, size: 14, color: Color(0xFF2979FF)),
                     label: const Text('Refresh', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
                     style: OutlinedButton.styleFrom(
@@ -106,11 +152,11 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _buildSummaryBox('18', 'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.kapasitas).toString(), 'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
                   const SizedBox(width: 12),
-                  _buildSummaryBox('3', 'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.terisi).toString(), 'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
                   const SizedBox(width: 12),
-                  _buildSummaryBox('15', 'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.tersedia).toString(), 'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
                 ],
               ),
               const SizedBox(height: 32),
@@ -136,29 +182,37 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
               const SizedBox(height: 12),
 
               // List of Rooms
-              ...mockKamarDaha.map((kamar) => _buildRoomCard(kamar)),
+              _isLoading 
+                ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
+                : _rooms.isEmpty 
+                  ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada kamar tersedia')))
+                  : Column(
+                      children: _rooms.map((kamar) => _buildRoomCard(kamar)).toList(),
+                    ),
               
               const SizedBox(height: 16),
               // Pagination Placeholder
-              const Center(
-                child: Text('Menampilkan 1-3 dari 3 hasil', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
-              ),
+              if (!_isLoading && _rooms.isNotEmpty)
+                Center(
+                  child: Text('Menampilkan 1-${_rooms.length} dari ${_rooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                ),
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
-                  const SizedBox(width: 16),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
-                    child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
-                ],
-              ),
+              if (!_isLoading && _rooms.isNotEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
+                    const SizedBox(width: 16),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
+                      child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
+                  ],
+                ),
               const SizedBox(height: 32),
             ],
           ),

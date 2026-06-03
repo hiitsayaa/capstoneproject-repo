@@ -16,75 +16,39 @@ class _InfoNjkbPageState extends State<InfoNjkbPage> {
   String? _selectedTahun;
 
   final List<String> _jenisList = [
-    'ALAT BERAT / ALAT BESAR',
-    'BLIND VAN',
-    'BUS',
-    'JEEP',
-    'KENDARAAN BERMOTOR AIR',
-    'LIGHT TRUCK',
-    'MICROBUS',
-    'MINIBUS',
-    'MOBIL R3',
-    'PICKUP',
-    'SEDAN',
-    'SEPEDA MOTOR R2',
-    'SEPEDA MOTOR R3',
-    'TRUCK'
+    'MOBIL',
+    'SEPEDA MOTOR'
   ];
 
   final List<String> _modelList = [
-    'AMBULANCE',
-    'B E M O',
-    'C O M B I',
-    'CARAVAN',
-    'CEL WAGON',
-    'DIRECT FINDER MOBILE',
-    'M U KESEHATAN',
-    'MIKROLET',
     'MINIBUS',
-    'MINIBUS LISTRIK',
-    'MOB KAS KELILING',
-    'MOBIL JENASAH',
-    'MOBIL PAJAK KLLG',
-    'MOBIL PATROLI'
+    'SUV',
+    'PICK UP',
+    'SEPEDA MOTOR'
   ];
 
   final List<String> _merkList = [
-    'AUDI',
-    'AUSTIN',
-    'BAIC',
-    'BAJAJ',
-    'BEIJING',
-    'BIMANTARA',
-    'BMW',
-    'CADILLAC',
-    'CHANGAN',
-    'CHERY',
-    'CHEVROLET',
-    'CHRYSLER',
-    'CITROEN',
-    'COMMER'
+    'Toyota',
+    'Honda',
+    'Daihatsu',
+    'Yamaha',
+    'Suzuki',
+    'Mazda'
   ];
 
   final List<String> _tipeList = [
-    'AVEO 1.4 LS (4X2) MT',
-    'AVEO 1.4 LT AT',
-    'AVEO 1.4 LT MT',
-    'AVEO 1.5 L AT',
-    'AVEO 1.5 L MT',
-    'AVEO 1.6 LTZ AT',
-    'BLAZER 01 DOHC',
-    'BLAZER MONTERA 01 SOHC',
-    'CAPTIVA 2.0 SOHC AT',
-    'CAPTIVA 2.0 SOHC AWD AT',
-    'CAPTIVA 2.0L AT',
-    'CAPTIVA 2.0L AT FL',
-    'CAPTIVA 2.0L AWD AT FL',
-    'CAPTIVA 2.0L AWD AT L'
+    'Avanza 1.3 G',
+    'Innova Zenix G',
+    'Vario 160 CBS',
+    'Brio Satya E',
+    'Terios R',
+    'NMAX Connected',
+    'Carry Pick Up',
+    'CX-3 Touring'
   ];
 
   final List<String> _tahunList = [
-    '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'
+    '2019', '2020', '2021', '2022', '2023', '2024'
   ];
 
   @override
@@ -128,7 +92,12 @@ class _InfoNjkbPageState extends State<InfoNjkbPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const HasilNjkbPage()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => HasilNjkbPage(
+                    merk: _selectedMerk,
+                    tipe: _selectedTipe,
+                    tahun: _selectedTahun,
+                    model: _selectedModel,
+                  )));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2979FF),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/kesehatan/rsud_daha_husada_ketersediaan_kamar.dart';
 import 'package:flutter_application_1/kesehatan/rsud_daha_husada_jadwal_operasi.dart';
 import 'package:flutter_application_1/kesehatan/rsud_daha_husada_antrian.dart';
+import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 class RsudDahaHusadaPage extends StatefulWidget {
   const RsudDahaHusadaPage({super.key});
@@ -11,7 +12,26 @@ class RsudDahaHusadaPage extends StatefulWidget {
 }
 
 class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
+  final RsudService _rsudService = RsudService();
+  bool _isLoading = true;
+  Map<String, dynamic>? _hospitalData;
   int _selectedTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHospitalData();
+  }
+
+  Future<void> _fetchHospitalData() async {
+    final data = await _rsudService.fetchHospitalDetail('daha');
+    if (mounted) {
+      setState(() {
+        _hospitalData = data;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,109 +55,99 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section
-            Padding(
-              padding: const EdgeInsets.all(20.0),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
-                  // Logo Placeholder
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_hospital,
-                        size: 80,
-                        color: Color(0xFF4CAF50), // Green for Daha Husada
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'RSUD',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const Text(
-                    'DAHA HUSADA',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: Color(0xFF4CAF50),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Title
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'RSUD Daha Husada',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Badge
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF2979FF)),
-                      ),
-                      child: const Text(
-                        'Rumah Sakit Umum Daerah Daha Husada',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2979FF),
+                  // Header Section
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 8),
+                        // Logo Placeholder
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.local_hospital, size: 40, color: Color(0xFF9CA3AF)),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _hospitalData?['name'] ?? 'RSUD Daha Husada',
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.location_on, size: 14, color: Color(0xFF6B7280)),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                _hospitalData?['address'] ?? 'Jl. Veteran No.48, Mojoroto, Kediri',
+                                style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.phone, size: 14, color: Color(0xFF6B7280)),
+                            const SizedBox(width: 4),
+                            Text(
+                              _hospitalData?['phone'] ?? '(0354) 777088',
+                              style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            'Buka 24 Jam',
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF388E3C)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Description
+                        Text(
+                          _hospitalData?['description'] ?? 'Penyedia layanan kesehatan unggulan yang menghadirkan perawatan medis profesional.',
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: Color(0xFF1A1A1A),
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Description
-                  const Text(
-                    'Penyedia layanan kesehatan unggulan dari Pemprov Jatim yang menghadirkan perawatan medis profesional, bermutu, dan terjangkau bagi seluruh lapisan masyarakat.',
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
-                      color: Color(0xFF1A1A1A),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
             // Tab Bar
             Padding(
