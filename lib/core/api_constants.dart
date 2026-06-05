@@ -1,6 +1,6 @@
 class ApiConstants {
-  // Menggunakan 10.0.2.2 karena Anda mengujinya di Emulator Android
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  // Menggunakan IP lokal komputer agar bisa diakses dari HP fisik di jaringan Wi-Fi yang sama
+  static const String baseUrl = 'http://10.200.32.127:3000';
 
   // Endpoint Auth
   static const String login = '$baseUrl/auth/login';

@@ -19,6 +19,8 @@ import 'package:flutter_application_1/kesehatan/rsud_daha_husada.dart';
 import 'package:flutter_application_1/kesehatan/rsud_daha_husada_jadwal_operasi.dart';
 import 'package:flutter_application_1/kesehatan/rsud_daha_husada_antrian.dart';
 import 'package:flutter_application_1/darurat/nomor_darurat.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 // Data model untuk layanan
 class LayananItem {
@@ -59,6 +61,7 @@ class VisitorTerdaftarPage extends StatefulWidget {
 }
 
 class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
+  String _currentCity = 'Mencari...';
   int _currentIndex = 0;
   List<String> _favoritIds = [];
   List<LayananItem> _semuaLayananAktif = [];
@@ -68,6 +71,54 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
   void initState() {
     super.initState();
     _fetchLayanan();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) setState(() => _currentCity = 'Jawa Timur');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) setState(() => _currentCity = 'Jawa Timur');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) setState(() => _currentCity = 'Jawa Timur');
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        String city = place.subAdministrativeArea ?? place.locality ?? 'Surabaya';
+        if (city.toLowerCase().startsWith('kabupaten ')) city = city.substring(10);
+        else if (city.toLowerCase().startsWith('kota ')) city = city.substring(5);
+        
+        if (mounted) setState(() => _currentCity = 'Kota $city');
+      } else {
+        if (mounted) setState(() => _currentCity = 'Jawa Timur');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _currentCity = 'Jawa Timur');
+    }
   }
 
   Future<void> _fetchLayanan() async {
@@ -172,8 +223,28 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
     }
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat pagi,';
+    if (hour < 15) return 'Selamat siang,';
+    if (hour < 18) return 'Selamat sore,';
+    return 'Selamat malam,';
+  }
+
+  String _getShortName(String fullName) {
+    if (fullName.isEmpty) return 'Pengguna';
+    final parts = fullName.trim().split(RegExp(r'\s+'));
+    if (parts.length > 2) {
+      return '${parts[0]} ${parts[1]}';
+    }
+    return fullName;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final rawName = AuthController.currentUser?.name ?? 'Pengguna';
+    final userName = _getShortName(rawName);
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -187,35 +258,35 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
               InkWell(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountPage())),
                 child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 22,
-                      backgroundImage: AssetImage('assets/profile_placeholder.png'),
-                      backgroundColor: Color(0xFFE0E0E0),
-                    ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Selamat pagi,', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
-                        Text('Ahmad Putra', style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                    const SizedBox(width: 2),
-                    const Text('Kota Malang', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.grey)),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade200),
+                    children: [
+                      const CircleAvatar(
+                        radius: 22,
+                        backgroundImage: AssetImage('assets/profile_placeholder.png'),
+                        backgroundColor: Color(0xFFE0E0E0),
                       ),
-                      child: const Icon(Icons.notifications_none_outlined, size: 20),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_getGreeting(), style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
+                            Text(userName, style: const TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                      const SizedBox(width: 2),
+                      Text(_currentCity, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.grey)),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: const Icon(Icons.notifications_none_outlined, size: 20),
+                      ),
+                    ],),
               ),
               const SizedBox(height: 16),
 

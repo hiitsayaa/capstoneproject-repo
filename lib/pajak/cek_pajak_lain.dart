@@ -66,7 +66,10 @@ class _CekPajakLainPageState extends State<CekPajakLainPage> {
         // tapi untuk sekarang kita ke PembayaranPkbPage() saja
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const PembayaranPkbPage()), // Note: Idealy pass bill data
+          MaterialPageRoute(builder: (_) => PembayaranPkbPage(
+            vehicle: _pkbResult!['vehicle'],
+            latestBill: (_pkbResult!['bills'] as List).isNotEmpty ? (_pkbResult!['bills'] as List).first : {},
+          )),
         );
       }
     }

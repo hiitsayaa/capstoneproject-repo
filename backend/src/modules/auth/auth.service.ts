@@ -46,7 +46,7 @@ export class AuthService {
     },
   ];
 
-  async register(payload: { email: string; password: string; nik: string; nama_lengkap: string }) {
+  async register(payload: { email: string; password: string; nik: string; nama_lengkap: string; tempat_lahir?: string; tanggal_lahir?: string; jenis_kelamin?: string; telepon?: string; alamat_lengkap?: string; }) {
     const passwordHash = bcrypt.hashSync(payload.password, 10);
     const created = await this.database.queryOne<{
       id: string;
@@ -68,8 +68,8 @@ export class AuthService {
           RETURNING id, email, role
         ),
         inserted_profile AS (
-          INSERT INTO auth.profiles (user_id, nik, nama_lengkap)
-          SELECT id, $3, $4 FROM inserted_user
+          INSERT INTO auth.profiles (user_id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, telepon, alamat_lengkap)
+          SELECT id, $3, $4, $5, $6::date, $7, $8, $9 FROM inserted_user
           RETURNING user_id, nik, kk, nama_lengkap, tempat_lahir, tanggal_lahir::text, jenis_kelamin, telepon, alamat_lengkap
         )
         SELECT u.id, u.email, u.role, p.nik, p.kk, p.nama_lengkap, p.tempat_lahir, p.tanggal_lahir,
@@ -77,7 +77,7 @@ export class AuthService {
         FROM inserted_user u
         JOIN inserted_profile p ON p.user_id = u.id
       `,
-      [payload.email, passwordHash, payload.nik, payload.nama_lengkap],
+      [payload.email, passwordHash, payload.nik, payload.nama_lengkap, payload.tempat_lahir || null, payload.tanggal_lahir || null, payload.jenis_kelamin || null, payload.telepon || null, payload.alamat_lengkap || null],
     );
 
     if (created) {
@@ -180,6 +180,7 @@ export class AuthService {
 
   async getProfileByNik(nik: string) {
     const dbProfile = await this.database.queryOne<{
+      email: string;
       nik: string;
       kk: string;
       nama_lengkap: string;
@@ -191,14 +192,14 @@ export class AuthService {
       favorites: string[];
     }>(
       `
-        SELECT p.nik, p.kk, p.nama_lengkap, p.tempat_lahir, p.tanggal_lahir::text,
+        SELECT u.email, p.nik, p.kk, p.nama_lengkap, p.tempat_lahir, p.tanggal_lahir::text,
                p.jenis_kelamin, p.telepon, p.alamat_lengkap,
                COALESCE(array_agg(f.service_key) FILTER (WHERE f.service_key IS NOT NULL), '{}') AS favorites
         FROM auth.profiles p
         JOIN auth.users u ON u.id = p.user_id
         LEFT JOIN auth.favorites f ON f.user_id = u.id
         WHERE p.nik = $1
-        GROUP BY p.id
+        GROUP BY p.id, u.email
       `,
       [nik],
     );
@@ -206,6 +207,7 @@ export class AuthService {
     if (dbProfile) {
       return {
         ...dbProfile,
+        email: dbProfile.email,
         kk: dbProfile.kk ?? '',
         tempat_lahir: dbProfile.tempat_lahir ?? '',
         tanggal_lahir: dbProfile.tanggal_lahir ?? '',
@@ -219,6 +221,7 @@ export class AuthService {
     const user = this.findByNik(nik);
     return {
       ...user.profile,
+      email: user.email,
       favorites: user.favorites,
     };
   }

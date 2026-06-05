@@ -1,8 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/pajak/pembayaran_pkb.dart';
+import 'package:flutter_application_1/pajak/services/bapenda_service.dart';
 
-class DetailKendaraanPage extends StatelessWidget {
-  const DetailKendaraanPage({super.key});
+class DetailKendaraanPage extends StatefulWidget {
+  final String nopol;
+  const DetailKendaraanPage({super.key, required this.nopol});
+
+  @override
+  State<DetailKendaraanPage> createState() => _DetailKendaraanPageState();
+}
+
+class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
+  final BapendaService _bapendaService = BapendaService();
+  bool _isLoading = true;
+  Map<String, dynamic>? _vehicleData;
+  Map<String, dynamic>? _latestBill;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    final result = await _bapendaService.checkPkb(widget.nopol);
+    if (mounted) {
+      setState(() {
+        if (result != null) {
+          _vehicleData = result['vehicle'];
+          final bills = result['bills'] as List? ?? [];
+          if (bills.isNotEmpty) {
+            _latestBill = bills.first;
+          }
+        }
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatCurrency(num amount) {
+    return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+  }
 
   void _showDetailPopup(BuildContext context) {
     showDialog(
@@ -29,21 +67,21 @@ class DetailKendaraanPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('Merk', 'Honda')),
-                    Expanded(child: _buildInfoPair('Nomor Rangka', 'MH1JM111xPK123456')),
+                    Expanded(child: _buildInfoPair('Merk', _vehicleData?['merk'] ?? '-')),
+                    Expanded(child: _buildInfoPair('Nomor Rangka', _vehicleData?['no_rangka'] ?? '-')),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('No. Polisi', 'N 3579 ANA')),
-                    Expanded(child: _buildInfoPair('Nomor Mesin', 'JM11E-1234567')),
+                    Expanded(child: _buildInfoPair('No. Polisi', _vehicleData?['nopol'] ?? '-')),
+                    Expanded(child: _buildInfoPair('Nomor Mesin', _vehicleData?['no_mesin'] ?? '-')),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoPair('Tahun Pembuatan', '2024')),
+                    Expanded(child: _buildInfoPair('Tahun Pembuatan', _vehicleData?['tahun']?.toString() ?? '-')),
                     Expanded(child: _buildInfoPair('Warna', 'BLACK')),
                   ],
                 ),
@@ -92,7 +130,11 @@ class DetailKendaraanPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _vehicleData == null
+            ? const Center(child: Text('Data tidak ditemukan', style: TextStyle(fontFamily: 'Poppins')))
+            : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           children: [
@@ -112,14 +154,14 @@ class DetailKendaraanPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: _buildInfoPair('Merk', 'Honda')),
-                      Expanded(child: _buildInfoPair('Model', 'NBE3B0MQNDFN43 A/T')),
+                      Expanded(child: _buildInfoPair('Merk', _vehicleData!['merk'] ?? '-')),
+                      Expanded(child: _buildInfoPair('Model', _vehicleData!['tipe'] ?? '-')),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildInfoPair('No. Polisi', 'N 3579 ANA')),
+                      Expanded(child: _buildInfoPair('No. Polisi', _vehicleData!['nopol'] ?? '-')),
                       Expanded(child: _buildInfoPair('Warna', 'BLACK')),
                     ],
                   ),
@@ -128,11 +170,11 @@ class DetailKendaraanPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _buildInfoPair('Tgl. Jatuh Tempo', '15 Juli 2026'),
+                      _buildInfoPair('Tgl. Jatuh Tempo', _latestBill?['due_date'] ?? '-'),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: const Color(0xFFE53935), borderRadius: BorderRadius.circular(20)),
-                        child: const Text('Belum dibayar', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
+                        decoration: BoxDecoration(color: (_latestBill?['status'] == 'Paid') ? const Color(0xFF43A047) : const Color(0xFFE53935), borderRadius: BorderRadius.circular(20)),
+                        child: Text(_latestBill?['status'] == 'Paid' ? 'Sudah dibayar' : 'Belum dibayar', style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -186,9 +228,9 @@ class DetailKendaraanPage extends StatelessWidget {
                     children: [
                       const Text('Total', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                       Row(
-                        children: const [
-                          Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
-                          Text('189.400', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
+                        children: [
+                          const Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                          Text(_latestBill != null ? _formatCurrency(_latestBill!['total'] ?? 0) : '0', style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],
@@ -199,13 +241,16 @@ class DetailKendaraanPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
+      bottomNavigationBar: _isLoading || _vehicleData == null ? null : Padding(
         padding: const EdgeInsets.all(20.0),
         child: ElevatedButton(
-          onPressed: () {
+          onPressed: _latestBill == null || _latestBill!['status'] == 'Paid' ? null : () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const PembayaranPkbPage()),
+              MaterialPageRoute(builder: (_) => PembayaranPkbPage(
+                vehicle: _vehicleData!,
+                latestBill: _latestBill!,
+              )),
             );
           },
           style: ElevatedButton.styleFrom(
@@ -214,6 +259,7 @@ class DetailKendaraanPage extends StatelessWidget {
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            disabledBackgroundColor: const Color(0xFFE5E7EB),
           ),
           child: const Text('Lanjutkan Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
         ),

@@ -232,7 +232,7 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const DetailKendaraanPage()),
+                              builder: (_) => DetailKendaraanPage(nopol: nopol)),
                         );
                       },
                       child: Row(
@@ -330,7 +330,7 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const DetailKendaraanPage()),
+                          builder: (_) => DetailKendaraanPage(nopol: nopol)),
                     );
                   },
             child: Container(

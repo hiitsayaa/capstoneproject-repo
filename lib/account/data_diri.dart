@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 
+import 'package:flutter_application_1/auth/services/auth_service.dart';
+
 class DataDiriPage extends StatefulWidget {
   const DataDiriPage({super.key});
 
@@ -9,8 +11,88 @@ class DataDiriPage extends StatefulWidget {
 }
 
 class _DataDiriPageState extends State<DataDiriPage> {
-  String? _jenisKelamin = 'laki-laki';
+  final AuthService _authService = AuthService();
+  bool _isLoading = true;
+
+  String? _jenisKelamin = 'Laki-laki'; // Ensure this matches DB format or adjust logic
   String? _pendidikan;
+
+  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _tglLahirController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController();
+  final TextEditingController _alamatController = TextEditingController();
+  final TextEditingController _teleponController = TextEditingController();
+  final TextEditingController _npwpController = TextEditingController();
+  final TextEditingController _bpjsController = TextEditingController();
+  final TextEditingController _kkController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final profile = await _authService.getFullProfile();
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        if (profile != null) {
+          _namaController.text = profile['nama_lengkap'] ?? '';
+          _emailController.text = profile['email'] ?? '';
+          _nikController.text = profile['nik'] ?? '';
+          _kkController.text = profile['kk'] ?? '';
+          _alamatController.text = profile['alamat_lengkap'] ?? '';
+          _teleponController.text = profile['telepon'] ?? '';
+          _tglLahirController.text = profile['tanggal_lahir'] ?? '';
+          
+          if (profile['jenis_kelamin'] != null && profile['jenis_kelamin'].toString().isNotEmpty) {
+            _jenisKelamin = profile['jenis_kelamin'] == 'L' ? 'Laki-laki' : (profile['jenis_kelamin'] == 'P' ? 'Perempuan' : profile['jenis_kelamin']);
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() => _isLoading = true);
+    try {
+      await _authService.updateProfile(
+        namaLengkap: _namaController.text,
+        tempatLahir: null, // If not on form
+        tanggalLahir: _tglLahirController.text,
+        jenisKelamin: _jenisKelamin == 'Laki-laki' ? 'L' : (_jenisKelamin == 'Perempuan' ? 'P' : _jenisKelamin),
+        telepon: _teleponController.text,
+        alamatLengkap: _alamatController.text,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil berhasil diperbarui')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _emailController.dispose();
+    _tglLahirController.dispose();
+    _nikController.dispose();
+    _alamatController.dispose();
+    _teleponController.dispose();
+    _npwpController.dispose();
+    _bpjsController.dispose();
+    _kkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +112,9 @@ class _DataDiriPageState extends State<DataDiriPage> {
         ),
       ),
       body: SingleChildScrollView(
-        child: Padding(
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator()) 
+          : Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -67,7 +151,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
               const SizedBox(height: 32),
 
               // Form Section
-              _buildTextField('Nama Lengkap', 'Masukkan nama lengkap'),
+              _buildTextField('Nama Lengkap', 'Masukkan nama lengkap', controller: _namaController),
               const SizedBox(height: 16),
               
               // Jenis Kelamin
@@ -81,7 +165,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
                       Expanded(
                         child: RadioListTile<String>(
                           title: const Text('Laki-laki', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
-                          value: 'laki-laki',
+                          value: 'Laki-laki',
                           groupValue: _jenisKelamin,
                           onChanged: (value) => setState(() => _jenisKelamin = value),
                           contentPadding: EdgeInsets.zero,
@@ -91,7 +175,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
                       Expanded(
                         child: RadioListTile<String>(
                           title: const Text('Perempuan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
-                          value: 'perempuan',
+                          value: 'Perempuan',
                           groupValue: _jenisKelamin,
                           onChanged: (value) => setState(() => _jenisKelamin = value),
                           contentPadding: EdgeInsets.zero,
@@ -104,7 +188,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
               ),
               const SizedBox(height: 16),
 
-              _buildTextField('Email', 'Masukkan email', keyboardType: TextInputType.emailAddress),
+              _buildTextField('Email', 'Masukkan email', keyboardType: TextInputType.emailAddress, controller: _emailController),
               const SizedBox(height: 16),
               
               // Tanggal Lahir
@@ -114,15 +198,20 @@ class _DataDiriPageState extends State<DataDiriPage> {
                   const Text('Tanggal Lahir', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF424656))),
                   const SizedBox(height: 8),
                   TextField(
+                    controller: _tglLahirController,
                     readOnly: true,
                     onTap: () async {
-                      await showDatePicker(
+                      final date = await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime(1900),
                         lastDate: DateTime.now(),
                       );
-                      // Handle picked date if necessary
+                      if (date != null) {
+                        setState(() {
+                          _tglLahirController.text = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+                        });
+                      }
                     },
                     decoration: InputDecoration(
                       hintText: 'Pilih tanggal',
@@ -149,7 +238,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
               ),
               const SizedBox(height: 16),
 
-              _buildTextField('NIK', 'Masukkan NIK', keyboardType: TextInputType.number),
+              _buildTextField('NIK', 'Masukkan NIK', keyboardType: TextInputType.number, controller: _nikController),
               const SizedBox(height: 16),
               
               // Alamat
@@ -159,6 +248,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
                   const Text('Alamat', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF424656))),
                   const SizedBox(height: 8),
                   TextField(
+                    controller: _alamatController,
                     maxLines: 3,
                     decoration: InputDecoration(
                       hintText: 'Masukkan alamat lengkap',
@@ -184,13 +274,13 @@ class _DataDiriPageState extends State<DataDiriPage> {
               ),
               const SizedBox(height: 16),
 
-              _buildTextField('No. Telepon', 'Masukkan nomor telepon', keyboardType: TextInputType.phone),
+              _buildTextField('No. Telepon', 'Masukkan nomor telepon', keyboardType: TextInputType.phone, controller: _teleponController),
               const SizedBox(height: 16),
-              _buildTextField('NPWP', 'Masukkan NPWP'),
+              _buildTextField('NPWP', 'Masukkan NPWP', controller: _npwpController),
               const SizedBox(height: 16),
-              _buildTextField('No. BPJS', 'Masukkan No. BPJS'),
+              _buildTextField('No. BPJS', 'Masukkan No. BPJS', controller: _bpjsController),
               const SizedBox(height: 16),
-              _buildTextField('No. KK', 'Masukkan No. KK'),
+              _buildTextField('No. KK', 'Masukkan No. KK', controller: _kkController),
               const SizedBox(height: 16),
 
               // Pendidikan Terakhir
@@ -236,7 +326,7 @@ class _DataDiriPageState extends State<DataDiriPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0066FF),
                     foregroundColor: Colors.white,
@@ -246,7 +336,9 @@ class _DataDiriPageState extends State<DataDiriPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     textStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 14),
                   ),
-                  child: const Text('Simpan'),
+                  child: _isLoading 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                      : const Text('Simpan'),
                 ),
               ),
               const SizedBox(height: 32),
@@ -257,13 +349,14 @@ class _DataDiriPageState extends State<DataDiriPage> {
     );
   }
 
-  Widget _buildTextField(String label, String hint, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(String label, String hint, {TextInputType keyboardType = TextInputType.text, TextEditingController? controller}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF424656))),
         const SizedBox(height: 8),
         TextField(
+          controller: controller,
           keyboardType: keyboardType,
           style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
           decoration: InputDecoration(

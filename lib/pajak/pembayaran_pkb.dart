@@ -4,7 +4,14 @@ import 'package:flutter/material.dart';
 // METODE PEMBAYARAN PAGE
 // ─────────────────────────────────────────────
 class PembayaranPkbPage extends StatefulWidget {
-  const PembayaranPkbPage({super.key});
+  final Map<String, dynamic> vehicle;
+  final Map<String, dynamic> latestBill;
+
+  const PembayaranPkbPage({
+    super.key,
+    required this.vehicle,
+    required this.latestBill,
+  });
 
   @override
   State<PembayaranPkbPage> createState() => _PembayaranPkbPageState();
@@ -13,6 +20,10 @@ class PembayaranPkbPage extends StatefulWidget {
 class _PembayaranPkbPageState extends State<PembayaranPkbPage> {
   String _expandedMethod = ''; // 'QRIS' or 'VA'
   String _selectedBank = ''; // 'Mandiri', 'BCA', 'BRI', 'BNI'
+
+  String _formatCurrency(num amount) {
+    return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,17 +69,17 @@ class _PembayaranPkbPageState extends State<PembayaranPkbPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildInfoCol('Merk', 'Honda'),
-                      _buildInfoCol('No. Polisi', 'N 3579 ANA'),
+                      _buildInfoCol('Merk', widget.vehicle['merk']?.toString() ?? '-'),
+                      _buildInfoCol('No. Polisi', widget.vehicle['nopol']?.toString() ?? '-'),
                     ],
                   ),
                   const SizedBox(height: 16),
                   const Divider(height: 1, color: Color(0xFFE5E7EB)),
                   const SizedBox(height: 16),
-                  _buildCostRow('PKB Pokok', '129.400'),
-                  _buildCostRow('PKB Denda', '25.000'),
-                  _buildCostRow('SWDKLLJ Pokok', '35.000'),
-                  _buildCostRow('SWDKLLJ Denda', '0'),
+                  _buildCostRow('PKB Pokok', _formatCurrency(widget.latestBill['pokok_pkb'] ?? 0)),
+                  _buildCostRow('PKB Denda', _formatCurrency(widget.latestBill['denda_pkb'] ?? 0)),
+                  _buildCostRow('SWDKLLJ Pokok', _formatCurrency(widget.latestBill['swdkllj'] ?? 0)),
+                  _buildCostRow('SWDKLLJ Denda', _formatCurrency(widget.latestBill['denda_swdkllj'] ?? 0)),
                   _buildCostRow('PNPB STNK', '0'),
                   _buildCostRow('PNPB TNKB', '0'),
                   const SizedBox(height: 8),
@@ -79,9 +90,9 @@ class _PembayaranPkbPageState extends State<PembayaranPkbPage> {
                     children: [
                       const Text('Total', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold)),
                       Row(
-                        children: const [
-                          Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
-                          Text('189.400', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                        children: [
+                          const Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
+                          Text(_formatCurrency(widget.latestBill['total'] ?? 0), style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],
@@ -179,7 +190,9 @@ class _PembayaranPkbPageState extends State<PembayaranPkbPage> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: OutlinedButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const BayarQrisPage()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => BayarQrisPage(
+                  total: widget.latestBill['total'] ?? 0,
+                )));
               },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFF2979FF)),
@@ -235,7 +248,10 @@ class _PembayaranPkbPageState extends State<PembayaranPkbPage> {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: _selectedBank.isEmpty ? null : () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const BayarVaPage()));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => BayarVaPage(
+                      total: widget.latestBill['total'] ?? 0,
+                      vehicle: widget.vehicle,
+                    )));
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2979FF),
@@ -301,7 +317,12 @@ class _PembayaranPkbPageState extends State<PembayaranPkbPage> {
 // QRIS PAYMENT PAGE
 // ─────────────────────────────────────────────
 class BayarQrisPage extends StatelessWidget {
-  const BayarQrisPage({super.key});
+  final num total;
+  const BayarQrisPage({super.key, required this.total});
+
+  String _formatCurrency(num amount) {
+    return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,10 +381,10 @@ class BayarQrisPage extends StatelessWidget {
                     children: [
                       const Text('Nominal Bayar', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
                       Row(
-                        children: const [
-                          Text('Rp 189.400', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
-                          SizedBox(width: 8),
-                          Text('Salin', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
+                        children: [
+                          Text('Rp ${_formatCurrency(total)}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          const Text('Salin', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
                         ],
                       ),
                     ],
@@ -386,7 +407,14 @@ class BayarQrisPage extends StatelessWidget {
 // VIRTUAL ACCOUNT PAYMENT PAGE
 // ─────────────────────────────────────────────
 class BayarVaPage extends StatelessWidget {
-  const BayarVaPage({super.key});
+  final num total;
+  final Map<String, dynamic> vehicle;
+  
+  const BayarVaPage({super.key, required this.total, required this.vehicle});
+
+  String _formatCurrency(num amount) {
+    return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -444,10 +472,10 @@ class BayarVaPage extends StatelessWidget {
                   const Text('Nominal Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
                   const SizedBox(height: 4),
                   Row(
-                    children: const [
-                      Text('Rp. 189.400', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
-                      SizedBox(width: 8),
-                      Text('Salin', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
+                    children: [
+                      Text('Rp. ${_formatCurrency(total)}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      const Text('Salin', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -456,11 +484,11 @@ class BayarVaPage extends StatelessWidget {
                   
                   const Text('Informasi Kendaraan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  _buildCopyRow('NIK Pemilik', '3216540506050001'),
+                  _buildCopyRow('NIK Pemilik', vehicle['nik_pemilik']?.toString() ?? '-'),
                   const SizedBox(height: 12),
-                  _buildCopyRow('Nomor Polisi', 'N 3579 ANA'),
+                  _buildCopyRow('Nomor Polisi', vehicle['nopol']?.toString() ?? '-'),
                   const SizedBox(height: 12),
-                  _buildCopyRow('Nomor Rangka', 'MH1JM111xPK123456'),
+                  _buildCopyRow('Nomor Rangka', vehicle['no_rangka']?.toString() ?? '-'),
                   
                   const SizedBox(height: 24),
                   const Center(child: Text('Lihat Panduan Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2979FF)))),

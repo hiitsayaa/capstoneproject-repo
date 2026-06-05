@@ -15,6 +15,26 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   nama_lengkap!: string;
+
+  @IsOptional()
+  @IsString()
+  tempat_lahir?: string;
+
+  @IsOptional()
+  @IsString()
+  tanggal_lahir?: string;
+
+  @IsOptional()
+  @IsString()
+  jenis_kelamin?: string;
+
+  @IsOptional()
+  @IsString()
+  telepon?: string;
+
+  @IsOptional()
+  @IsString()
+  alamat_lengkap?: string;
 }
 
 export class LoginDto {

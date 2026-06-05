@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_application_1/darurat/nomor_darurat_wilayah.dart';
 import 'package:flutter_application_1/darurat/nomor_darurat_detail.dart';
 import 'package:flutter_application_1/darurat/services/emergency_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 Future<void> _handleCall(BuildContext context, String number, String name) async {
   showDialog(
@@ -57,14 +59,77 @@ class _NomorDaruratKontakPageState extends State<NomorDaruratKontakPage> {
   List<EmergencyContact> _jatimContacts = [];
   List<String> _otherRegions = [];
 
-  // Simulasi lokasi user saat ini
-  final String _currentLocation = 'Kota Surabaya';
+  // Lokasi user saat ini (default)
+  String _currentLocation = 'Mencari lokasi...';
 
   @override
   void initState() {
     super.initState();
     _otherRegions = ['Kota Malang', 'Kota Kediri', 'Kota Batu'];
-    _fetchData();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _fallbackToSurabaya();
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _fallbackToSurabaya();
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _fallbackToSurabaya();
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        // Gunakan subAdministrativeArea (Kabupaten/Kota) atau locality (Kota/Kecamatan)
+        String city = place.subAdministrativeArea ?? place.locality ?? 'Kota Surabaya';
+        
+        // Membersihkan prefix "Kabupaten " jika ada agar seragam
+        if (city.toLowerCase().startsWith('kabupaten ')) {
+          city = city.substring(10);
+        } else if (city.toLowerCase().startsWith('kota ')) {
+          city = city.substring(5);
+        }
+        
+        setState(() {
+          _currentLocation = 'Kota $city';
+        });
+      } else {
+        _fallbackToSurabaya();
+      }
+    } catch (e) {
+      _fallbackToSurabaya();
+    } finally {
+      _fetchData();
+    }
+  }
+
+  void _fallbackToSurabaya() {
+    setState(() {
+      _currentLocation = 'Kota Surabaya';
+    });
   }
 
   Future<void> _fetchData() async {

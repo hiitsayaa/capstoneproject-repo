@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../controllers/auth_controller.dart';
-import 'package:flutter_application_1/auth/views/login_view.dart';
+import 'package:flutter_application_1/account/visitorterdaftar.dart';
 
 class RegisterStep2Page extends StatefulWidget {
   final String namaDepan;
@@ -115,11 +115,11 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
       
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrasi berhasil! Silakan login.'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Registrasi berhasil!'), backgroundColor: Colors.green),
         );
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
+          MaterialPageRoute(builder: (_) => const VisitorTerdaftarPage()),
           (route) => false,
         );
       } else {

@@ -45,6 +45,29 @@ class AuthService {
     }
   }
 
+  /// Mengekstrak seluruh profil mentah untuk halaman Data Diri
+  Future<Map<String, dynamic>?> getFullProfile() async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    try {
+      final url = Uri.parse(ApiConstants.profile);
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Melakukan login dengan email dan password.
   Future<UserModel> login(String email, String password) async {
     try {
@@ -100,8 +123,13 @@ class AuthService {
           'password': password,
           'nama_lengkap': '$namaDepan $namaBelakang'.trim(),
           'nik': nik,
-          // Backend Majadigi saat ini fokus pada 4 field utama di API contract
-          // Field lainnya bisa di-update nanti via /profile/me
+          'tempat_lahir': 'Belum Diisi', // Temporary fallback, but UI should provide it if we have it? Wait, the API doesn't require them but user filled them?
+          // Let's check what the register method parameters are...
+          // required String namaDepan, required String namaBelakang, required String nomorHp, required String alamat, required String nik, required String tanggalLahir, required String jenisKelamin
+          'telepon': nomorHp,
+          'alamat_lengkap': alamat,
+          'tanggal_lahir': tanggalLahir.isNotEmpty ? tanggalLahir : null,
+          'jenis_kelamin': jenisKelamin.isNotEmpty ? jenisKelamin : null,
         }),
       );
 
@@ -120,6 +148,45 @@ class AuthService {
   /// Melakukan login menggunakan Google Sign-In (Dihapus sementara)
   Future<UserModel> signInWithGoogle() async {
     throw Exception('Fitur Login Google saat ini belum didukung oleh server Majadigi');
+  }
+
+  /// Update profil user
+  Future<void> updateProfile({
+    String? namaLengkap,
+    String? tempatLahir,
+    String? tanggalLahir,
+    String? jenisKelamin,
+    String? telepon,
+    String? alamatLengkap,
+  }) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Tidak ada token');
+
+    try {
+      final url = Uri.parse(ApiConstants.profile);
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          if (namaLengkap != null) 'nama_lengkap': namaLengkap,
+          if (tempatLahir != null) 'tempat_lahir': tempatLahir,
+          if (tanggalLahir != null) 'tanggal_lahir': tanggalLahir,
+          if (jenisKelamin != null) 'jenis_kelamin': jenisKelamin,
+          if (telepon != null) 'telepon': telepon,
+          if (alamatLengkap != null) 'alamat_lengkap': alamatLengkap,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Gagal memperbarui profil');
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 
   /// Logout user
