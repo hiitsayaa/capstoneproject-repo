@@ -44,21 +44,8 @@ class _NomorDaruratPageState extends State<NomorDaruratPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 8),
-                  // Logo Placeholder (Jer Basuki Mawa Beya logo placeholder)
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Image.network(
-                      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Lambang_Jawa_Timur.svg/1200px-Lambang_Jawa_Timur.svg.png',
-                      errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(Icons.shield, size: 80, color: Color(0xFF1E88E5)),
-                      ),
-                    ),
-                  ),
+                  // Nomor Darurat Logo
+                  Image.asset('assets/logolayanan1.png', height: 120),
                   const SizedBox(height: 24),
 
                   // Title

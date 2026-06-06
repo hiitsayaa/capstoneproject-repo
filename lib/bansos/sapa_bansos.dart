@@ -45,21 +45,8 @@ class _SapaBansosPageState extends State<SapaBansosPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 8),
-                  // Logo Placeholder (Jatim logo)
-                  Container(
-                    width: 100,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    // Use a placeholder icon for the logo
-                    child: const Icon(
-                      Icons.shield,
-                      size: 100,
-                      color: Color(0xFF1E88E5),
-                    ),
-                  ),
+                  // Bansos Logo
+                  Image.asset('assets/logolayanan1.png', height: 100),
                   const SizedBox(height: 20),
 
                   // Title

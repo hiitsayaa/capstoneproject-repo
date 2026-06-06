@@ -65,7 +65,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/logo_jatim.png',
+                      'assets/logolayanan1.png',
                       width: 100,
                       height: 120,
                       fit: BoxFit.contain,

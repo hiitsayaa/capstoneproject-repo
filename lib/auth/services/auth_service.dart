@@ -150,6 +150,33 @@ class AuthService {
     throw Exception('Fitur Login Google saat ini belum didukung oleh server Majadigi');
   }
 
+  /// Update layanan favorit
+  Future<void> updateFavorites(List<String> serviceKeys) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Tidak ada token');
+
+    try {
+      final url = Uri.parse(ApiConstants.favorites);
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'service_keys': serviceKeys,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Gagal memperbarui favorit');
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
   /// Update profil user
   Future<void> updateProfile({
     String? namaLengkap,

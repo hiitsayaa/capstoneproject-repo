@@ -44,22 +44,8 @@ class _RsudKarsaHusadaPageState extends State<RsudKarsaHusadaPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 8),
-                  // Logo Placeholder
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_hospital,
-                        size: 80,
-                        color: Color(0xFFE53935),
-                      ),
-                    ),
-                  ),
+                  // RSUD Karsa Husada Logo
+                  Image.asset('assets/logo_rsud_karsa.png', height: 100),
                   const SizedBox(height: 12),
                   const Text(
                     'RSUD',

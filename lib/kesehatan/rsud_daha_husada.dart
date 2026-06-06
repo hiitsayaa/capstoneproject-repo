@@ -68,19 +68,8 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: 8),
-                        // Logo Placeholder
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.local_hospital, size: 40, color: Color(0xFF9CA3AF)),
-                          ),
-                        ),
+                        // RSUD Daha Husada Logo
+                        Image.asset('assets/logo_rsud_daha.png', height: 80),
                         const SizedBox(height: 16),
                         Text(
                           _hospitalData?['name'] ?? 'RSUD Daha Husada',

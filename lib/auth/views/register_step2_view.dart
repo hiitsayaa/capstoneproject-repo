@@ -34,6 +34,7 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
   bool _autoValidate = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  DateTime? _selectedDate;
 
   @override
   void dispose() {
@@ -57,6 +58,7 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
     );
     if (picked != null) {
       setState(() {
+        _selectedDate = picked;
         _tglLahirCtrl.text = DateFormat('d MMMM yyyy', 'id').format(picked);
       });
     }
@@ -107,8 +109,8 @@ class _RegisterStep2PageState extends State<RegisterStep2Page> {
         nomorHp: widget.nomorHP,
         alamat: _alamatCtrl.text,
         nik: _nikCtrl.text,
-        tanggalLahir: _tglLahirCtrl.text,
-        jenisKelamin: _jenisKelaminCtrl.text,
+        tanggalLahir: _selectedDate != null ? DateFormat('yyyy-MM-dd').format(_selectedDate!) : '',
+        jenisKelamin: _jenisKelaminCtrl.text == 'Laki-laki' ? 'L' : (_jenisKelaminCtrl.text == 'Perempuan' ? 'P' : ''),
       );
       
       if (!mounted) return;

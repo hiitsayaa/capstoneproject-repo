@@ -45,19 +45,7 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                 children: [
                   const SizedBox(height: 8),
                   // RSUD Haji Logo
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F7F0),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.health_and_safety,
-                      color: Color(0xFF43A047),
-                      size: 60,
-                    ),
-                  ),
+                  Image.asset('assets/logo_rsud_haji.png', height: 100),
                   const SizedBox(height: 16),
 
                   // Title

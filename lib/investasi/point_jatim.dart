@@ -44,25 +44,8 @@ class _PointJatimPageState extends State<PointJatimPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 8),
-                  // Logo Placeholder (Jatim logo on map)
-                  Container(
-                    width: double.infinity,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.location_on, size: 64, color: Color(0xFFE53935)),
-                          SizedBox(height: 8),
-                          Text('Logo POINT JATIM', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF9CA3AF))),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Point Jatim Logo
+                  Image.asset('assets/logopointjatim.png', height: 140),
                   const SizedBox(height: 24),
 
                   // Title

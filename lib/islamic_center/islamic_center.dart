@@ -27,7 +27,7 @@ class _IslamicCenterPageState extends State<IslamicCenterPage> {
           children: [
             const SizedBox(height: 24),
             // Logo and Header
-            Image.asset('assets/logo_jatim.png', height: 100),
+            Image.asset('assets/logo_islamic_center.png', height: 100),
             const SizedBox(height: 16),
             const Text('Islamic Center', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),

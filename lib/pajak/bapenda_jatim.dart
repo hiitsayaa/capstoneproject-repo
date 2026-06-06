@@ -44,29 +44,8 @@ class _BapendaJatimPageState extends State<BapendaJatimPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Logo Text (bapenda jatim)
-                  const Text(
-                    'bapenda',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1A1A1A),
-                      height: 1.1,
-                      letterSpacing: -1.5,
-                    ),
-                  ),
-                  const Text(
-                    'jatim',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF9CA3AF),
-                      height: 0.9,
-                      letterSpacing: -1.5,
-                    ),
-                  ),
+                  // Bapenda Logo
+                  Image.asset('assets/logobapendajatim.png', height: 80),
                   const SizedBox(height: 24),
 
                   // Title

@@ -1,11 +1,15 @@
 class ApiConstants {
-  // Menggunakan IP lokal komputer agar bisa diakses dari HP fisik di jaringan Wi-Fi yang sama
-  static const String baseUrl = 'http://10.200.32.127:3000';
+  // Menggunakan 127.0.0.1 karena kita menggunakan jalur kabel USB (adb reverse)
+  // static const String baseUrl = 'http://127.0.0.1:3000';
+
+  //Menghubungkan aplikasi Flutter di emulator Android ke server backend (localhost) yang berjalan di laptop
+  static const String baseUrl = 'http://10.0.2.2:3000';
 
   // Endpoint Auth
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/register';
   static const String profile = '$baseUrl/profile/me';
+  static const String favorites = '$baseUrl/profile/favorites';
 
   // Endpoint Gateway
   static const String features = '$baseUrl/gateway/features';

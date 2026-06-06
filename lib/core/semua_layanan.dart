@@ -26,13 +26,35 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
-  final List<String> _categories = ['Semua', 'Kesehatan', 'Kerja', 'Usaha', 'Transportasi'];
+  final List<String> _categories = ['Semua', 'Kesehatan', 'Keuangan', 'Sosial', 'Informasi', 'Darurat', 'Investasi'];
+
+  String _getCategoryForId(String id) {
+    switch (id) {
+      case 'bapenda': return 'Keuangan';
+      case 'klinik_hoaks': return 'Informasi';
+      case 'nomor_darurat': return 'Darurat';
+      case 'point_jatim': return 'Investasi';
+      case 'skrining_tbc': return 'Kesehatan';
+      case 'rsud_daha_husada': return 'Kesehatan';
+      case 'rsud_haji': return 'Kesehatan';
+      case 'rsud_karsa_husada': return 'Kesehatan';
+      case 'sapa_bansos': return 'Sosial';
+      case 'islamic_center': return 'Sosial';
+      default: return 'Lainnya';
+    }
+  }
 
   List<LayananItem> get _filtered {
     var list = referensiLayanan.toList();
+    
     if (_searchQuery.isNotEmpty) {
       list = list.where((l) => l.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
     }
+    
+    if (_selectedCategory != 'Semua') {
+      list = list.where((l) => _getCategoryForId(l.id) == _selectedCategory).toList();
+    }
+    
     return list;
   }
 
@@ -110,14 +132,19 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
                 final item = _filtered[index];
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                  leading: Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      color: item.iconColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(item.icon, color: item.iconColor, size: 22),
-                  ),
+                  leading: item.imageAsset.isNotEmpty
+                      ? SizedBox(
+                          width: 44, height: 44,
+                          child: Image.asset(item.imageAsset, fit: BoxFit.contain),
+                        )
+                      : Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: item.iconColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(item.icon, color: item.iconColor, size: 22),
+                        ),
                   title: Text(item.name, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600)),
                   subtitle: Text(item.subtitle, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF9CA3AF))),
                   trailing: const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),

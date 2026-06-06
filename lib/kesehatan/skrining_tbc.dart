@@ -44,18 +44,8 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 8),
-                  // E-TIBI Logo Text
-                  const Text(
-                    'E-TIBI',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 56,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF00897B),
-                      height: 1.0,
-                      letterSpacing: 2,
-                    ),
-                  ),
+                  // E-TIBI Logo
+                  Image.asset('assets/logo_etibi.png', height: 80),
                   const SizedBox(height: 20),
 
                   // Title

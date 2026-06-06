@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/account/account.dart';
 import 'package:flutter_application_1/auth/controllers/auth_controller.dart';
+import 'package:flutter_application_1/auth/services/auth_service.dart';
+import 'package:flutter_application_1/berita/berita_page.dart';
 import 'package:flutter_application_1/widgets/incomplete_profile_dialog.dart';
 import 'package:flutter_application_1/core/kelola_favorit.dart';
 import 'package:flutter_application_1/core/semua_layanan.dart';
@@ -29,6 +31,7 @@ class LayananItem {
   final String subtitle;
   final IconData icon;
   final Color iconColor;
+  final String imageAsset;
 
   const LayananItem({
     required this.id,
@@ -36,21 +39,22 @@ class LayananItem {
     this.subtitle = '',
     required this.icon,
     this.iconColor = const Color(0xFF0055CC),
+    this.imageAsset = '',
   });
 }
 
 // Daftar semua layanan yang tersedia (dijadikan referensi ikon/warna)
 const List<LayananItem> referensiLayanan = [
-  LayananItem(id: 'bapenda', name: 'Bapenda Jatim', subtitle: 'Bapenda Jatim', icon: Icons.account_balance, iconColor: Color(0xFF1565C0)),
-  LayananItem(id: 'klinik_hoaks', name: 'Klinik Hoaks', subtitle: 'Klinik Hoaks', icon: Icons.fact_check, iconColor: Color(0xFFE53935)),
-  LayananItem(id: 'nomor_darurat', name: 'Nomor Darurat', subtitle: 'Nomor Darurat', icon: Icons.phone_in_talk, iconColor: Color(0xFFE53935)),
-  LayananItem(id: 'point_jatim', name: 'Point Jatim', subtitle: 'Point Jatim', icon: Icons.stars, iconColor: Color(0xFF43A047)),
-  LayananItem(id: 'skrining_tbc', name: 'Skrining E-Tibi', subtitle: 'Skrining E-Tibi', icon: Icons.medical_services, iconColor: Color(0xFF00897B)),
-  LayananItem(id: 'rsud_daha_husada', name: 'Rsud Daha Husada', subtitle: 'RSUD Daha Husada', icon: Icons.local_hospital, iconColor: Color(0xFF1E88E5)),
-  LayananItem(id: 'rsud_haji', name: 'Rsud Haji Prov. Jatim', subtitle: 'RSUD Haji Prov. Jatim', icon: Icons.health_and_safety, iconColor: Color(0xFF43A047)),
-  LayananItem(id: 'rsud_karsa_husada', name: 'RSUD Karsa Husada', subtitle: 'RSUD Karsa Husada', icon: Icons.local_hospital, iconColor: Color(0xFF5E35B1)),
-  LayananItem(id: 'sapa_bansos', name: 'Sapa Bansos', subtitle: 'SAPA BANSOS', icon: Icons.volunteer_activism, iconColor: Color(0xFFFF6F00)),
-  LayananItem(id: 'islamic_center', name: 'Islamic Center', subtitle: 'Islamic Center', icon: Icons.mosque, iconColor: Color(0xFF00897B)),
+  LayananItem(id: 'bapenda', name: 'Bapenda Jatim', subtitle: 'Bapenda Jatim', icon: Icons.account_balance, iconColor: Color(0xFF1565C0), imageAsset: 'assets/logobapendajatim.png'),
+  LayananItem(id: 'klinik_hoaks', name: 'Klinik Hoaks', subtitle: 'Klinik Hoaks', icon: Icons.fact_check, iconColor: Color(0xFFE53935), imageAsset: 'assets/logolayanan1.png'),
+  LayananItem(id: 'nomor_darurat', name: 'Nomor Darurat', subtitle: 'Nomor Darurat', icon: Icons.phone_in_talk, iconColor: Color(0xFFE53935), imageAsset: 'assets/logolayanan1.png'),
+  LayananItem(id: 'point_jatim', name: 'Point Jatim', subtitle: 'Point Jatim', icon: Icons.stars, iconColor: Color(0xFF43A047), imageAsset: 'assets/logopointjatim.png'),
+  LayananItem(id: 'skrining_tbc', name: 'Skrining E-Tibi', subtitle: 'Skrining E-Tibi', icon: Icons.medical_services, iconColor: Color(0xFF00897B), imageAsset: 'assets/logo_etibi.png'),
+  LayananItem(id: 'rsud_daha_husada', name: 'Rsud Daha Husada', subtitle: 'RSUD Daha Husada', icon: Icons.local_hospital, iconColor: Color(0xFF1E88E5), imageAsset: 'assets/logo_rsud_daha.png'),
+  LayananItem(id: 'rsud_haji', name: 'Rsud Haji Prov. Jatim', subtitle: 'RSUD Haji Prov. Jatim', icon: Icons.health_and_safety, iconColor: Color(0xFF43A047), imageAsset: 'assets/logo_rsud_haji.png'),
+  LayananItem(id: 'rsud_karsa_husada', name: 'RSUD Karsa Husada', subtitle: 'RSUD Karsa Husada', icon: Icons.local_hospital, iconColor: Color(0xFF5E35B1), imageAsset: 'assets/logo_rsud_karsa.png'),
+  LayananItem(id: 'sapa_bansos', name: 'Sapa Bansos', subtitle: 'SAPA BANSOS', icon: Icons.volunteer_activism, iconColor: Color(0xFFFF6F00), imageAsset: 'assets/logolayanan1.png'),
+  LayananItem(id: 'islamic_center', name: 'Islamic Center', subtitle: 'Islamic Center', icon: Icons.mosque, iconColor: Color(0xFF00897B), imageAsset: 'assets/logo_islamic_center.png'),
 ];
 
 class VisitorTerdaftarPage extends StatefulWidget {
@@ -66,6 +70,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
   List<String> _favoritIds = [];
   List<LayananItem> _semuaLayananAktif = [];
   bool _isLoading = true;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -123,6 +128,14 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
 
   Future<void> _fetchLayanan() async {
     setState(() => _isLoading = true);
+    
+    try {
+      final profile = await AuthService().getFullProfile();
+      if (profile != null && profile['favorites'] != null) {
+        _favoritIds = List<String>.from(profile['favorites']);
+      }
+    } catch (_) {}
+
     final features = await GatewayService.fetchActiveFeatures();
     final List<LayananItem> aktif = [];
     
@@ -149,7 +162,9 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
           subtitle: ref.subtitle,
           icon: ref.icon,
           iconColor: ref.iconColor,
+          imageAsset: ref.imageAsset,
         ));
+        print('DEBUG: feature key="${feature['key']}", ref.id="${ref.id}", imageAsset="${ref.imageAsset}"');
       }
     }
 
@@ -160,9 +175,14 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
     });
   }
 
-  // Layanan umum yang ditampilkan di home (8 pertama + Lainnya)
-  List<LayananItem> get _layananUmum => _semuaLayananAktif.take(8).toList();
+  // Layanan umum yang ditampilkan di home (7 pertama + Lainnya)
+  List<LayananItem> get _layananUmum => _semuaLayananAktif.take(7).toList();
   List<LayananItem> get _favoritLayanan => _semuaLayananAktif.where((l) => _favoritIds.contains(l.id)).toList();
+
+  List<LayananItem> get _filteredLayanan {
+    if (_searchQuery.isEmpty) return _layananUmum;
+    return _semuaLayananAktif.where((l) => l.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+  }
 
   void _onTabTapped(int index) {
     if (index == 3) {
@@ -179,6 +199,17 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
     );
     if (result != null) {
       setState(() => _favoritIds = result);
+      
+      // Simpan ke database backend
+      try {
+        await AuthService().updateFavorites(result);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menyimpan layanan favorit: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -244,16 +275,46 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
   Widget build(BuildContext context) {
     final rawName = AuthController.currentUser?.name ?? 'Pengguna';
     final userName = _getShortName(rawName);
+
+    Widget getBody() {
+      switch (_currentIndex) {
+        case 0: return _buildBeranda(userName);
+        case 1: return const BeritaPage();
+        case 2: return const Center(child: Text('Aktivitas: Segera Hadir', style: TextStyle(fontFamily: 'Poppins')));
+        default: return const SizedBox();
+      }
+    }
     
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
+      body: getBody(),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF2979FF),
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 11),
+        currentIndex: _currentIndex,
+        onTap: _onTabTapped,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: 'Berita'),
+          BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Aktivitas'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Akun'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBeranda(String userName) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
               // Header
               InkWell(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountPage())),
@@ -276,7 +337,14 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                       ),
                       const Icon(Icons.location_on, size: 14, color: Colors.grey),
                       const SizedBox(width: 2),
-                      Text(_currentCity, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.grey)),
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 90),
+                        child: Text(
+                          _currentCity, 
+                          style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.all(8),
@@ -291,16 +359,24 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
               const SizedBox(height: 16),
 
               // Banner
-              ClipRRect(
+              InkWell(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Banner diklik! (Fitur promosi segera hadir)', style: TextStyle(fontFamily: 'Poppins'))),
+                  );
+                },
                 borderRadius: BorderRadius.circular(16),
-                child: Image.asset('assets/welcome_image.png', fit: BoxFit.cover, height: 160, width: double.infinity,
-                  errorBuilder: (_, _, _) => Container(
-                    height: 160, width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF66BB6A)]),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset('assets/welcome_image.png', fit: BoxFit.cover, height: 160, width: double.infinity,
+                    errorBuilder: (_, _, _) => Container(
+                      height: 160, width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF66BB6A)]),
+                      ),
+                      child: const Center(child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 20))),
                     ),
-                    child: const Center(child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 20))),
                   ),
                 ),
               ),
@@ -345,14 +421,19 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                           width: 72,
                           child: Column(
                             children: [
-                              Container(
-                                width: 50, height: 50,
-                                decoration: BoxDecoration(
-                                  color: item.iconColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(item.icon, color: item.iconColor, size: 26),
-                              ),
+                              item.imageAsset.isNotEmpty
+                                  ? SizedBox(
+                                      width: 50, height: 50,
+                                      child: Image.asset(item.imageAsset, fit: BoxFit.contain),
+                                    )
+                                  : Container(
+                                      width: 50, height: 50,
+                                      decoration: BoxDecoration(
+                                        color: item.iconColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(item.icon, color: item.iconColor, size: 26),
+                                    ),
                               const SizedBox(height: 6),
                               Text(item.name, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w500)),
@@ -367,6 +448,11 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
 
               // Search bar
               TextField(
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                  });
+                },
                 decoration: InputDecoration(
                   hintText: 'Cari layanan di Majadigi',
                   hintStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFFADB5BD)),
@@ -391,9 +477,9 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4, mainAxisSpacing: 12, crossAxisSpacing: 8, childAspectRatio: 0.75,
                     ),
-                    itemCount: _layananUmum.length + 1, // +1 for "Lainnya"
+                    itemCount: _searchQuery.isEmpty ? _layananUmum.length + 1 : _filteredLayanan.length, // +1 for "Lainnya" if not searching
                     itemBuilder: (context, index) {
-                      if (index == _layananUmum.length) {
+                      if (_searchQuery.isEmpty && index == _layananUmum.length) {
                         return _buildServiceTile(
                           icon: Icons.more_horiz,
                           label: 'Lainnya',
@@ -401,11 +487,12 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SemuaLayananPage())),
                         );
                       }
-                      final item = _layananUmum[index];
+                      final item = _searchQuery.isEmpty ? _layananUmum[index] : _filteredLayanan[index];
                       return _buildServiceTile(
                         icon: item.icon,
                         label: item.name,
                         color: item.iconColor,
+                        imageAsset: item.imageAsset,
                         onTap: () => _navigateToLayanan(item.id),
                       );
                     },
@@ -418,19 +505,22 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
               _buildNewsCard(
                 'Strategi Penanganan Banjir Pasuruan: Mas Rusdi Fokus Sinergi Antarinstansi dan Penguatan Shelt...',
                 'Peristiwa', 'Senin, 31 Maret 2026',
+                imageUrl: 'https://images.unsplash.com/photo-1542282088-fe8426682b8f?auto=format&fit=crop&q=80&w=200',
               ),
               _buildNewsCard(
                 'Waspada Ancaman Campak di Gresik: 65 Kasus Muncul, Satu Pasien Bisa Tulari 18 Orang',
                 'Kesehatan', 'Senin, 31 Maret 2026',
+                imageUrl: 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&q=80&w=200',
               ),
               _buildNewsCard(
                 'Unair Umumkan Nama 68 Kandidat Penerima Golden Ticket 2026',
                 'Pendidikan', 'Senin, 31 Maret 2026',
+                imageUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=200',
               ),
               const SizedBox(height: 8),
               Center(
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () => _onTabTapped(1),
                   child: const Text('Lihat semua berita', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF2979FF), fontWeight: FontWeight.w600)),
                 ),
               ),
@@ -465,37 +555,25 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF2979FF),
-        unselectedItemColor: Colors.grey,
-        selectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 11),
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: 'Berita'),
-          BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Aktivitas'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Akun'),
-        ],
-      ),
-    );
+      );
   }
 
-  Widget _buildServiceTile({required IconData icon, required String label, required Color color, VoidCallback? onTap}) {
+  Widget _buildServiceTile({required IconData icon, required String label, required Color color, String imageAsset = '', VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 50, height: 50,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
-            child: Icon(icon, color: color, size: 26),
-          ),
+          imageAsset.isNotEmpty
+              ? SizedBox(
+                  width: 50, height: 50,
+                  child: Image.asset(imageAsset, fit: BoxFit.contain),
+                )
+              : Container(
+                  width: 50, height: 50,
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
+                  child: Icon(icon, color: color, size: 26),
+                ),
           const SizedBox(height: 6),
           Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w500)),
@@ -504,7 +582,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
     );
   }
 
-  Widget _buildNewsCard(String title, String category, String date) {
+  Widget _buildNewsCard(String title, String category, String date, {String imageUrl = ''}) {
     Color catColor;
     switch (category) {
       case 'Peristiwa': catColor = const Color(0xFFE53935); break;
@@ -525,7 +603,14 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
           Container(
             width: 80, height: 65,
             decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.image, color: Colors.grey, size: 28),
+            child: imageUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(imageUrl, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.grey, size: 28),
+                    ),
+                  )
+                : const Icon(Icons.image, color: Colors.grey, size: 28),
           ),
           const SizedBox(width: 12),
           Expanded(

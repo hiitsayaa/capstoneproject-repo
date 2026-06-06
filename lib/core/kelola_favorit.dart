@@ -157,15 +157,27 @@ class _KelolaFavoritPageState extends State<KelolaFavoritPage> {
                             Stack(
                               clipBehavior: Clip.none,
                               children: [
-                                Container(
-                                  width: 50, height: 50,
-                                  decoration: BoxDecoration(
-                                    color: item.iconColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: isSelected ? Border.all(color: const Color(0xFF2979FF), width: 2) : null,
-                                  ),
-                                  child: Icon(item.icon, color: item.iconColor, size: 24),
-                                ),
+                                  item.imageAsset.isNotEmpty
+                                      ? Container(
+                                          width: 50, height: 50,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: isSelected ? Border.all(color: const Color(0xFF2979FF), width: 2) : null,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: Image.asset(item.imageAsset, fit: BoxFit.contain),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 50, height: 50,
+                                          decoration: BoxDecoration(
+                                            color: item.iconColor.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: isSelected ? Border.all(color: const Color(0xFF2979FF), width: 2) : null,
+                                          ),
+                                          child: Icon(item.icon, color: item.iconColor, size: 24),
+                                        ),
                                 Positioned(
                                   right: -4, top: -4,
                                   child: Container(
