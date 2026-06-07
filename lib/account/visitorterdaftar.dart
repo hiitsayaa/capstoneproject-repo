@@ -23,7 +23,8 @@ import 'package:flutter_application_1/kesehatan/rsud_daha_husada_antrian.dart';
 import 'package:flutter_application_1/darurat/nomor_darurat.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-
+import 'package:flutter_application_1/aktivitas/aktivitas_page.dart';
+import 'package:flutter_application_1/widgets/floating_chatbot.dart';
 // Data model untuk layanan
 class LayananItem {
   final String id;
@@ -185,10 +186,6 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
   }
 
   void _onTabTapped(int index) {
-    if (index == 3) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountPage()));
-      return;
-    }
     setState(() => _currentIndex = index);
   }
 
@@ -280,14 +277,20 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
       switch (_currentIndex) {
         case 0: return _buildBeranda(userName);
         case 1: return const BeritaPage();
-        case 2: return const Center(child: Text('Aktivitas: Segera Hadir', style: TextStyle(fontFamily: 'Poppins')));
+        case 2: return const AktivitasPage();
+        case 3: return const AccountPage();
         default: return const SizedBox();
       }
     }
     
     return Scaffold(
       backgroundColor: Colors.white,
-      body: getBody(),
+      body: Stack(
+        children: [
+          getBody(),
+          if (_currentIndex == 0) const FloatingChatbotWidget(),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,

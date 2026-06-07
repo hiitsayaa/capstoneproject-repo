@@ -259,3 +259,15 @@ CREATE TABLE IF NOT EXISTS tbc_screening.records (
   answers_json JSONB NOT NULL DEFAULT '[]',
   submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE SCHEMA IF NOT EXISTS aktivitas;
+
+CREATE TABLE IF NOT EXISTS aktivitas.user_activities (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  type TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('Dalam Proses', 'Selesai')),
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
