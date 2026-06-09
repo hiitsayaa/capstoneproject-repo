@@ -60,6 +60,30 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
   int _selectedTabIndex = 0; // 0 = Semua, 1 = Anda
   String _lastUpdated = '';
 
+  String _searchQuery = '';
+  List<String> _selectedStatus = ['Semua status'];
+  List<String> _selectedSpesialisasi = ['Semua spesialisasi'];
+
+  List<OperasiDaha> get _filteredSurgeries {
+    var list = _surgeries;
+    if (_searchQuery.isNotEmpty) {
+      list = list.where((op) => 
+        op.namaOperasi.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        op.dokter.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
+    }
+    
+    if (!_selectedStatus.contains('Semua status')) {
+      list = list.where((op) => _selectedStatus.contains(op.status)).toList();
+    }
+    
+    if (!_selectedSpesialisasi.contains('Semua spesialisasi')) {
+      list = list.where((op) => _selectedSpesialisasi.contains(op.klinik)).toList();
+    }
+    
+    return list;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -95,7 +119,16 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return const _FilterOperasiModalContent();
+        return _FilterOperasiModalContent(
+          initialStatus: _selectedStatus,
+          initialSpesialisasi: _selectedSpesialisasi,
+          onApply: (status, spesialisasi) {
+            setState(() {
+              _selectedStatus = status;
+              _selectedSpesialisasi = spesialisasi;
+            });
+          },
+        );
       },
     );
   }
@@ -172,7 +205,7 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        _buildSummaryBox(_surgeries.length.toString(), 'Total\nOperasi', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                        _buildSummaryBox(_surgeries.length.toString(), 'Total Operasi', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
                         const SizedBox(width: 12),
                         _buildSummaryBox(_surgeries.where((e) => e.status == 'Terjadwal').length.toString(), 'Terjadwal', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
                         const SizedBox(width: 12),
@@ -186,6 +219,7 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
 
               // Search Bar
               TextField(
+                onChanged: (val) => setState(() => _searchQuery = val),
                 style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
                 decoration: InputDecoration(
                   hintText: 'Cari operasi',
@@ -233,9 +267,8 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
               // Tabs
               Row(
                 children: [
-                  _buildTabItem(0, 'Semua Jadwal Operasi'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(1, 'Jadwal Operasi Anda'),
+                  Expanded(child: Center(child: _buildTabItem(0, 'Semua Jadwal Operasi'))),
+                  Expanded(child: Center(child: _buildTabItem(1, 'Jadwal Operasi Anda'))),
                 ],
               ),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
@@ -244,9 +277,16 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
               // List grouped by Tanggal
               _isLoading
                   ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
-                  : _surgeries.isEmpty
-                      ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada jadwal operasi')))
-                      : _buildJadwalList(),
+                  : _selectedTabIndex == 1
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text('Belum ada jadwal operasi untuk Anda.', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280)))
+                          )
+                        )
+                      : _filteredSurgeries.isEmpty
+                          ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada jadwal operasi')))
+                          : _buildJadwalList(),
               
               const SizedBox(height: 32),
             ],
@@ -305,7 +345,7 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
   Widget _buildJadwalList() {
     // Grouping logic for the data
     final grouped = <String, List<OperasiDaha>>{};
-    for (var op in _surgeries) {
+    for (var op in _filteredSurgeries) {
       if (grouped.containsKey(op.tanggal)) {
         grouped[op.tanggal]!.add(op);
       } else {
@@ -368,17 +408,17 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Left Waktu
-                IntrinsicWidth(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    alignment: Alignment.topCenter,
-                    decoration: const BoxDecoration(
-                      border: Border(right: BorderSide(color: Color(0xFFE5E7EB))),
-                    ),
-                    child: Text(
-                      op.waktu,
-                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
-                    ),
+                Container(
+                  width: 90,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                  alignment: Alignment.topCenter,
+                  decoration: const BoxDecoration(
+                    border: Border(right: BorderSide(color: Color(0xFFE5E7EB))),
+                  ),
+                  child: Text(
+                    op.waktu,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
                   ),
                 ),
                 // Right Details
@@ -436,21 +476,37 @@ class _RsudDahaHusadaJadwalOperasiPageState extends State<RsudDahaHusadaJadwalOp
 // Filter Modal Content
 // ─────────────────────────────────────────────
 class _FilterOperasiModalContent extends StatefulWidget {
-  const _FilterOperasiModalContent();
+  final List<String> initialStatus;
+  final List<String> initialSpesialisasi;
+  final Function(List<String>, List<String>) onApply;
+
+  const _FilterOperasiModalContent({
+    required this.initialStatus,
+    required this.initialSpesialisasi,
+    required this.onApply,
+  });
 
   @override
   State<_FilterOperasiModalContent> createState() => _FilterOperasiModalContentState();
 }
 
 class _FilterOperasiModalContentState extends State<_FilterOperasiModalContent> {
-  List<String> _selectedStatus = ['Semua status'];
-  final List<String> _statusOptions = ['Semua status', 'Terjadwal', 'Sedang berjalan', 'Selesai', 'Dibatalkan'];
+  late List<String> _selectedStatus;
+  late List<String> _selectedSpesialisasi;
 
-  List<String> _selectedSpesialisasi = ['Semua spesialisasi'];
+  final List<String> _statusOptions = ['Semua status', 'Terjadwal', 'Sedang Berjalan', 'Selesai', 'Dibatalkan'];
+
   final List<String> _spesialisasiOptions = [
     'Semua spesialisasi', 'Klinik Mata', 'Klinik Penyakit Dalam', 'Klinik Kulit Kelamin', 
-    'Klinik Bedah', 'Klinik Jantung', 'Klinik Kusta'
+    'Klinik Bedah', 'Klinik Jantung', 'Klinik Kusta', 'Bedah'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStatus = List.from(widget.initialStatus);
+    _selectedSpesialisasi = List.from(widget.initialSpesialisasi);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -610,7 +666,10 @@ class _FilterOperasiModalContentState extends State<_FilterOperasiModalContent> 
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      widget.onApply(_selectedStatus, _selectedSpesialisasi);
+                      Navigator.pop(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2979FF),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

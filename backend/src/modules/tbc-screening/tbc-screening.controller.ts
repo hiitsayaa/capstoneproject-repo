@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, Query, Req } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { SubmitTbcScreeningDto } from './tbc-screening.dto';
 import { TbcScreeningService } from './tbc-screening.service';
@@ -20,12 +20,19 @@ export class TbcScreeningController {
   }
 
   @Post('records')
-  submit(@Body() body: SubmitTbcScreeningDto) {
-    return this.tbcScreeningService.submit(body);
+  submit(@Req() req: any, @Body() body: SubmitTbcScreeningDto) {
+    const userId = req.user?.id;
+    return this.tbcScreeningService.submit(body, userId?.toString());
   }
 
   @Get('records')
-  getHistory(@Query('nik') nik?: string) {
-    return this.tbcScreeningService.getHistory(nik);
+  getHistory(@Req() req: any, @Query('nik') nik?: string) {
+    const userId = req.user?.id;
+    return this.tbcScreeningService.getHistory(userId?.toString(), nik);
+  }
+
+  @Patch('records/:id/faskes')
+  updateFaskes(@Param('id') id: string, @Body('faskes_name') faskesName: string) {
+    return this.tbcScreeningService.updateFaskes(id, faskesName);
   }
 }

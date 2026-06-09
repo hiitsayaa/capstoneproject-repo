@@ -62,31 +62,61 @@ export class TbcScreeningService {
     };
   }
 
-  async submit(payload: SubmitTbcScreeningDto) {
+  async submit(payload: SubmitTbcScreeningDto, userId?: string) {
     const positiveAnswers = payload.answers.filter((answer) => answer.answer).length;
-    const risk_level = positiveAnswers >= 3 ? 'Tinggi' : positiveAnswers >= 1 ? 'Sedang' : 'Rendah';
-    const recommendation = risk_level === 'Tinggi' ? 'Segera lakukan pemeriksaan dahak di faskes terdekat.' : 'Pantau gejala dan konsultasi bila keluhan berlanjut.';
+    // Calculate hasil based on positive answers
+    const hasil = positiveAnswers >= 1 ? 'Terindikasi TBC' : 'Tidak Terindikasi TBC';
+    const recommendation = hasil === 'Terindikasi TBC' ? 'Segera lakukan pemeriksaan dahak di faskes terdekat.' : 'Pantau gejala dan konsultasi bila keluhan berlanjut.';
     const row = await this.database.queryOne<Record<string, unknown>>(
       `
-        INSERT INTO tbc_screening.records (nik, nama, kabupaten_kota, risk_level, recommendation, answers_json)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, nik, nama, kabupaten_kota, risk_level, recommendation, answers_json, submitted_at
+        INSERT INTO tbc_screening.records (
+          nik, nama, kabupaten_kota, hasil, recommendation, answers_json,
+          is_self, pelapor_nama, pelapor_kelompok, pelapor_instansi, pelapor_telepon,
+          jenis_kelamin, telepon, tanggal_lahir, usia, berat_badan, tinggi_badan,
+          alamat, pekerjaan, kecamatan, kelurahan, user_id
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10, $11,
+          $12, $13, $14, $15, $16, $17,
+          $18, $19, $20, $21, $22
+        )
+        RETURNING id, nik, nama, kabupaten_kota, hasil, recommendation, answers_json, submitted_at, user_id
       `,
-      [payload.nik, payload.nama, payload.kabupaten_kota ?? null, risk_level, recommendation, JSON.stringify(payload.answers)],
+      [
+        payload.nik, payload.nama, payload.kabupaten_kota ?? null, hasil, recommendation, JSON.stringify(payload.answers),
+        payload.is_self ?? true, payload.pelapor_nama ?? null, payload.pelapor_kelompok ?? null, payload.pelapor_instansi ?? null, payload.pelapor_telepon ?? null,
+        payload.jenis_kelamin ?? null, payload.telepon ?? null, payload.tanggal_lahir ?? null, payload.usia ?? null, payload.berat_badan ?? null, payload.tinggi_badan ?? null,
+        payload.alamat ?? null, payload.pekerjaan ?? null, payload.kecamatan ?? null, payload.kelurahan ?? null, userId ?? null
+      ],
     );
-    return row ?? { id: `screening-${Date.now()}`, ...payload, risk_level, recommendation, submitted_at: new Date().toISOString() };
+    return row ?? { id: `screening-${Date.now()}`, ...payload, hasil, recommendation, submitted_at: new Date().toISOString() };
   }
 
-  async getHistory(nik?: string) {
+  async getHistory(userId?: string, nik?: string) {
     const rows = await this.database.query<Record<string, unknown>>(
       `
-        SELECT id, nik, nama, kabupaten_kota, risk_level, recommendation, answers_json, submitted_at
+        SELECT id, nik, nama, kabupaten_kota, hasil, recommendation, answers_json, submitted_at, faskes_name
         FROM tbc_screening.records
-        WHERE ($1::text IS NULL OR nik = $1)
+        WHERE ($1::text IS NULL OR user_id = $1)
+          AND ($2::text IS NULL OR nik = $2)
         ORDER BY submitted_at DESC
       `,
-      [nik ?? null],
+      [userId ?? null, nik ?? null],
     );
     return { data: rows ?? [] };
+  }
+
+  async updateFaskes(id: string, faskesName: string) {
+    const row = await this.database.queryOne(
+      `
+        UPDATE tbc_screening.records
+        SET faskes_name = $2
+        WHERE id = $1
+        RETURNING id, faskes_name
+      `,
+      [id, faskesName]
+    );
+    return row;
   }
 }

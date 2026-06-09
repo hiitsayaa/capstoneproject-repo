@@ -21,7 +21,8 @@ export class DatabaseService implements OnModuleDestroy {
     try {
       const result = await this.pool.query<T>(text, params);
       return result.rows;
-    } catch {
+    } catch (e) {
+      console.error('DB Error:', e);
       return null;
     }
   }

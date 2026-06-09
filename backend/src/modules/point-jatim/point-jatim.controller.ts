@@ -19,6 +19,7 @@ export class PointJatimController {
     return this.pointJatimService.getProject(id);
   }
 
+  @Public()
   @Post('submissions')
   createSubmission(@Body() body: CreatePointJatimSubmissionDto) {
     return this.pointJatimService.createSubmission(body);

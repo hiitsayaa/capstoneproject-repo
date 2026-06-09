@@ -2,78 +2,65 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/hoaks/semua_berita_hoaks.dart';
 import 'package:flutter_application_1/hoaks/laporan_hoaks.dart';
 import 'package:flutter_application_1/hoaks/lacak_tiket.dart';
+import 'package:flutter_application_1/hoaks/services/hoaks_service.dart';
 
 // Data model untuk berita hoaks
 class BeritaHoaksItem {
+  final String? id;
   final String title;
   final String category;
   final String tag; // 'Hoaks', 'Fakta', 'Disinformasi', 'Hate Speech'
   final String date;
   final String? imageAsset;
+  final String? urlSumber;
 
   const BeritaHoaksItem({
+    this.id,
     required this.title,
     required this.category,
     required this.tag,
     required this.date,
     this.imageAsset,
+    this.urlSumber,
   });
 }
 
-// Sample data berita hoaks
-const List<BeritaHoaksItem> daftarBeritaHoaks = [
-  BeritaHoaksItem(
-    title: 'Spanyol Deluar Dari Nato Usai AS Serang Iran',
-    category: 'Geopolitik',
-    tag: 'Hoaks',
-    date: '05 Apr 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Prabowo Siap Hentikan Program MBG',
-    category: 'Pendidikan',
-    tag: 'Hoaks',
-    date: '02 Apr 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Kebijakan WFH 1 Hari Dalam Seminggu Mulai 1 April 2026',
-    category: 'Karier',
-    tag: 'Fakta',
-    date: '01 Apr 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Vaksin COVID-19 Mengandung Microchip Pelacak',
-    category: 'Kesehatan',
-    tag: 'Hoaks',
-    date: '28 Mar 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Pemerintah Gratiskan Listrik Untuk Seluruh Warga',
-    category: 'Ekonomi',
-    tag: 'Disinformasi',
-    date: '25 Mar 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Data Pribadi Jutaan Warga Bocor di Dark Web',
-    category: 'Teknologi',
-    tag: 'Fakta',
-    date: '22 Mar 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Harga BBM Naik 200% Mulai Bulan Depan',
-    category: 'Ekonomi',
-    tag: 'Hoaks',
-    date: '20 Mar 2026',
-  ),
-  BeritaHoaksItem(
-    title: 'Aplikasi X Mencuri Data Pengguna Tanpa Izin',
-    category: 'Teknologi',
-    tag: 'Disinformasi',
-    date: '18 Mar 2026',
-  ),
-];
+// Sample data berita hoaks dihapus karena sudah dinamis
 
-class HalamanKlinikHoaks extends StatelessWidget {
+class HalamanKlinikHoaks extends StatefulWidget {
   const HalamanKlinikHoaks({super.key});
+
+  @override
+  State<HalamanKlinikHoaks> createState() => _HalamanKlinikHoaksState();
+}
+
+class _HalamanKlinikHoaksState extends State<HalamanKlinikHoaks> {
+  List<BeritaHoaksItem> _articles = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchArticles();
+  }
+
+  Future<void> _fetchArticles() async {
+    try {
+      final articles = await HoaksService.getArticles();
+      if (mounted) {
+        setState(() {
+          _articles = articles;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,9 +255,26 @@ class HalamanKlinikHoaks extends StatelessWidget {
             const SizedBox(height: 14),
 
             // Berita Cards (show first 3)
-            ...daftarBeritaHoaks.take(3).map(
-                  (berita) => _buildBeritaCard(berita),
-                ),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _articles.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: Text(
+                          'Tidak ada berita saat ini.',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: _articles
+                            .take(3)
+                            .map((berita) => _buildBeritaCard(berita))
+                            .toList(),
+                      ),
 
             const SizedBox(height: 24),
           ],
@@ -462,47 +466,21 @@ class HalamanKlinikHoaks extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thumbnail image placeholder
+          // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
-              width: 80,
-              height: 80,
+              width: 100,
+              height: 100,
               color: Colors.grey.shade200,
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(Icons.article,
-                        color: Colors.grey.shade400, size: 28),
-                  ),
-                  // Tag overlay on thumbnail
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: tagBgColor,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(10),
-                          bottomRight: Radius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        berita.tag,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                          color: tagColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: Image.network(
+                berita.imageAsset ?? 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=200',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Icon(Icons.article, color: Colors.grey.shade400, size: 28),
+                  );
+                },
               ),
             ),
           ),
@@ -563,16 +541,7 @@ class HalamanKlinikHoaks extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
 
-                // Category
-                Text(
-                  berita.category,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-                const SizedBox(height: 6),
+
 
                 // Baca Selengkapnya
                 GestureDetector(

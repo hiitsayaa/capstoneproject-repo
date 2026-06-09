@@ -41,17 +41,17 @@ class _PointJatimPageState extends State<PointJatimPage> {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
                   // Point Jatim Logo
-                  Image.asset('assets/logopointjatim.png', height: 140),
+                  Center(child: Image.asset('assets/logopointjatim.png', height: 140)),
                   const SizedBox(height: 24),
 
                   // Title
                   const Text(
                     'Peluang Investasi Proyek Jatim\n(POINT JATIM)',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 18,
@@ -74,7 +74,7 @@ class _PointJatimPageState extends State<PointJatimPage> {
                     ),
                     child: const Text(
                       'Dinas Penanaman Modal dan Pelayanan Terpadu Satu\nPintu',
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.left,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 10,
@@ -89,7 +89,7 @@ class _PointJatimPageState extends State<PointJatimPage> {
                   // Description
                   const Text(
                     'Pusat informasi investasi berbasis webGIS yang dikelola\nDPMPTSP Provinsi Jawa Timur.',
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
@@ -102,15 +102,21 @@ class _PointJatimPageState extends State<PointJatimPage> {
             ),
 
             // Tab Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildTabItem(0, 'Layanan'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(1, 'Operasional'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(2, 'Ketentuan Umum'),
+            DefaultTabController(
+              length: 3,
+              initialIndex: _selectedTabIndex,
+              child: TabBar(
+                onTap: (index) => setState(() => _selectedTabIndex = index),
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+                labelPadding: EdgeInsets.zero,
+                labelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 12),
+                tabs: const [
+                  Tab(text: 'Layanan'),
+                  Tab(text: 'Operasional'),
+                  Tab(text: 'Ketentuan Umum'),
                 ],
               ),
             ),
@@ -124,33 +130,6 @@ class _PointJatimPageState extends State<PointJatimPage> {
 
             const SizedBox(height: 32),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabItem(int index, String title) {
-    final isSelected = _selectedTabIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTabIndex = index),
-      child: Container(
-        padding: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
-          ),
         ),
       ),
     );

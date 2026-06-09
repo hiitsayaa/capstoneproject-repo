@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/investasi/services/point_jatim_service.dart';
 
 class PointJatimAjukanPage extends StatefulWidget {
-  const PointJatimAjukanPage({super.key});
+  final String projectId;
+
+  const PointJatimAjukanPage({super.key, required this.projectId});
 
   @override
   State<PointJatimAjukanPage> createState() => _PointJatimAjukanPageState();
@@ -12,6 +15,7 @@ class _PointJatimAjukanPageState extends State<PointJatimAjukanPage> {
   final _emailCtrl = TextEditingController();
   final _teleponCtrl = TextEditingController();
   final _pesanCtrl = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -22,7 +26,7 @@ class _PointJatimAjukanPageState extends State<PointJatimAjukanPage> {
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_namaCtrl.text.isEmpty || _emailCtrl.text.isEmpty || _teleponCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silakan lengkapi form yang wajib diisi')),
@@ -30,7 +34,31 @@ class _PointJatimAjukanPageState extends State<PointJatimAjukanPage> {
       return;
     }
 
-    _showSuccessDialog();
+    setState(() {
+      _isLoading = true;
+    });
+
+    final success = await PointJatimService.apply(
+      projectId: widget.projectId,
+      namaInvestor: _namaCtrl.text,
+      email: _emailCtrl.text,
+      telepon: _teleponCtrl.text,
+      catatan: _pesanCtrl.text,
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (success) {
+      if (mounted) _showSuccessDialog();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal mengirim pengajuan. Coba lagi.')),
+        );
+      }
+    }
   }
 
   void _showSuccessDialog() {
@@ -51,15 +79,15 @@ class _PointJatimAjukanPageState extends State<PointJatimAjukanPage> {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Terima kasih karena ingin berinvestasi\nproyek ini!',
+              'Pengajuan Investasi Berhasil!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Tim Proyek akan menghubungi Anda melalui kontak\nyang Anda berikan',
+              'Terima kasih atas minat Anda. Tim Proyek kami akan segera menghubungi Anda melalui kontak yang telah Anda berikan untuk proses selanjutnya.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280)),
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -104,7 +132,7 @@ class _PointJatimAjukanPageState extends State<PointJatimAjukanPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Ajukan Investasi', // Fixed typo from mockup ("Laporan Hoaks")
+          'Ajukan Investasi',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w600,
@@ -117,63 +145,65 @@ class _PointJatimAjukanPageState extends State<PointJatimAjukanPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Ajukan Investasi',
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Ajukan Investasi',
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Sampaikan minat investasi Anda terhadap proyek ini.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280)),
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Form
+                        _buildTextField('Nama', _namaCtrl, hint: 'Masukkan nama'),
+                        const SizedBox(height: 16),
+                        _buildTextField('Email', _emailCtrl, hint: 'Masukkan email', keyboardType: TextInputType.emailAddress),
+                        const SizedBox(height: 16),
+                        _buildTextField('Nomor Telepon', _teleponCtrl, hint: 'Masukkan nomor telepon', keyboardType: TextInputType.phone),
+                        const SizedBox(height: 16),
+                        _buildTextField('Pesan (Opsional)', _pesanCtrl, hint: 'Tuliskan pesan singkat', isTextArea: true),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Sampaikan minat investasi Anda terhadap proyek ini.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280)),
+                ),
+                
+                // Bottom Button
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5)),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                  
-                  // Form
-                  _buildTextField('Nama', _namaCtrl, hint: 'Masukkan nama'),
-                  const SizedBox(height: 16),
-                  _buildTextField('Email', _emailCtrl, hint: 'Masukkan email', keyboardType: TextInputType.emailAddress),
-                  const SizedBox(height: 16),
-                  _buildTextField('Nomor Telepon', _teleponCtrl, hint: 'Masukkan nomor telepon', keyboardType: TextInputType.phone),
-                  const SizedBox(height: 16),
-                  _buildTextField('Pesan (Opsional)', _pesanCtrl, hint: 'Tuliskan pesan singkat', isTextArea: true),
-                ],
-              ),
-            ),
-          ),
-          
-          // Bottom Button
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5)),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _submitForm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2979FF),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Kirim Permintaan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                ),
               ],
             ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2979FF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text('Kirim Permintaan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

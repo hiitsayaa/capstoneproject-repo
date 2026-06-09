@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bansos/services/bansos_service.dart';
+import 'package:flutter_application_1/auth/services/auth_service.dart';
 
-class SapaBansosHasilPage extends StatelessWidget {
+class SapaBansosHasilPage extends StatefulWidget {
   final String nik;
 
   const SapaBansosHasilPage({
@@ -9,11 +11,51 @@ class SapaBansosHasilPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Mock data based on the screenshot
-    final String mockNama = 'Ahmad Putra';
-    final String mockNik = '3216540506050001';
+  State<SapaBansosHasilPage> createState() => _SapaBansosHasilPageState();
+}
 
+class _SapaBansosHasilPageState extends State<SapaBansosHasilPage> {
+  final BansosService _bansosService = BansosService();
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = true;
+  String _errorMessage = '';
+  
+  Map<String, dynamic>? _profile;
+  Map<String, dynamic>? _bansosApplication;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final profile = await _authService.getFullProfile();
+      final statuses = await _bansosService.getStatus();
+
+      setState(() {
+        _profile = profile;
+        if (statuses.isNotEmpty) {
+          _bansosApplication = statuses.first as Map<String, dynamic>;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatCurrency(num value) {
+    return 'Rp ${value.toStringAsFixed(0).replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), '.')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -34,94 +76,64 @@ class SapaBansosHasilPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Result Banner
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Anda Terdaftar Sebagai Penerima Bansos',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E88E5),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage.isNotEmpty
+              ? Center(child: Text(_errorMessage, style: const TextStyle(fontFamily: 'Poppins', color: Colors.red)))
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Data Diri
+                        const Text(
+                          'Data Diri',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A),
+                          ),
                         ),
-                      ),
-                    ),
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2979FF),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 16),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                        const SizedBox(height: 12),
+                        _buildDataRow('Nama', _profile?['nama_lengkap'] ?? '-'),
+                        const SizedBox(height: 8),
+                        _buildDataRow('Nama Ibu Kandung', _bansosApplication?['nama_ibu_kandung'] ?? '-'),
+                        const SizedBox(height: 8),
+                        _buildDataRow('NIK', _profile?['nik'] ?? widget.nik),
+                        const SizedBox(height: 8),
+                        _buildDataRow('Penghasilan', _bansosApplication != null ? _formatCurrency(_bansosApplication!['penghasilan_bulanan'] as num) : '-'),
+                        const SizedBox(height: 8),
+                        _buildDataRow('Tanggungan', _bansosApplication?['jumlah_tanggungan']?.toString() ?? '-'),
+                        const SizedBox(height: 24),
 
-              // Data Diri
-              const Text(
-                'Data Diri',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
+                        // Informasi Bansos
+                        const Text(
+                          'Informasi Bansos',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_bansosApplication == null)
+                          const Text(
+                            'Belum ada pengajuan bansos.',
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280)),
+                          )
+                        else
+                          _buildBansosCard(
+                            title: _bansosApplication!['nama_program']?.toString() ?? 'Program Keluarga Harapan Plus',
+                            status: _bansosApplication!['status']?.toString() ?? 'Menunggu Verifikasi',
+                            periode: '2026',
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _buildDataRow('Nama', mockNama),
-              const SizedBox(height: 8),
-              _buildDataRow('NIK', mockNik),
-              const SizedBox(height: 24),
-
-              // Informasi Bansos
-              const Text(
-                'Informasi Bansos',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildBansosCard(
-                title: 'Program Keluarga Harapan Plus',
-                status: 'Aktif',
-                periode: 'Januari - Juni 2026',
-              ),
-              const SizedBox(height: 12),
-              _buildBansosCard(
-                title: 'Asistensi Sosial Penyandang Disabilitas',
-                status: 'Aktif',
-                periode: 'Januari - Juni 2026',
-              ),
-              const SizedBox(height: 12),
-              _buildBansosCard(
-                title: 'Asistensi Sosial Penyandang Disabilitas',
-                status: 'Aktif',
-                periode: 'Januari - Juni 2026', // Based on the UI screenshot which has duplicates
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -130,7 +142,7 @@ class SapaBansosHasilPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 80,
+          width: 120,
           child: Text(
             label,
             style: const TextStyle(
@@ -169,6 +181,26 @@ class SapaBansosHasilPage extends StatelessWidget {
     required String status,
     required String periode,
   }) {
+    Color statusColor;
+    String statusText;
+
+    switch (status.toLowerCase()) {
+      case 'approved':
+        statusColor = const Color(0xFF4CAF50);
+        statusText = 'Disetujui';
+        break;
+      case 'rejected':
+        statusColor = const Color(0xFFF44336);
+        statusText = 'Ditolak';
+        break;
+      case 'verifying':
+      case 'submitted':
+      default:
+        statusColor = const Color(0xFFFFA000);
+        statusText = 'Menunggu Verifikasi';
+        break;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -192,17 +224,17 @@ class SapaBansosHasilPage extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 80,
-                child: const Text(
+                child: Text(
                   'Status',
                   style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280)),
                 ),
               ),
               Expanded(
                 child: Text(
-                  status,
-                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                  statusText,
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
                 ),
               ),
             ],
@@ -211,9 +243,9 @@ class SapaBansosHasilPage extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 80,
-                child: const Text(
+                child: Text(
                   'Periode',
                   style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280)),
                 ),

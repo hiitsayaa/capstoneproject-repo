@@ -350,17 +350,7 @@ class BayarQrisPage extends StatelessWidget {
                 children: [
                   const Text('Selesaikan Pembayaran Sebelum', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Sabtu, 25-04-2026\n20.00 WIB', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, height: 1.4)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(20)),
-                        child: const Text('00:42:56', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2979FF))),
-                      ),
-                    ],
-                  ),
+                  const CountdownHeaderWidget(),
                   const SizedBox(height: 24),
                   
                   // QRIS Code Placeholder
@@ -443,17 +433,7 @@ class BayarVaPage extends StatelessWidget {
                 children: [
                   const Text('Selesaikan Pembayaran Sebelum', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Sabtu, 25-04-2026\n20.00 WIB', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, height: 1.4)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(20)),
-                        child: const Text('00:42:56', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2979FF))),
-                      ),
-                    ],
-                  ),
+                  const CountdownHeaderWidget(),
                   const SizedBox(height: 20),
                   const Divider(height: 1, color: Color(0xFFE5E7EB)),
                   const SizedBox(height: 20),
@@ -714,7 +694,12 @@ class PembayaranBerhasilPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context), // Returning to Home
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EskkpViewerPage()),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2979FF),
                       foregroundColor: Colors.white,
@@ -729,6 +714,132 @@ class PembayaranBerhasilPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// COUNTDOWN HEADER WIDGET
+// ─────────────────────────────────────────────
+class CountdownHeaderWidget extends StatefulWidget {
+  const CountdownHeaderWidget({super.key});
+
+  @override
+  State<CountdownHeaderWidget> createState() => _CountdownHeaderWidgetState();
+}
+
+class _CountdownHeaderWidgetState extends State<CountdownHeaderWidget> {
+  late DateTime _targetTime;
+  late Duration _remaining;
+  bool _isFinished = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _targetTime = DateTime.now().add(const Duration(minutes: 30));
+    _updateTimer();
+  }
+
+  void _updateTimer() {
+    if (!mounted) return;
+    setState(() {
+      final now = DateTime.now();
+      if (_targetTime.isBefore(now)) {
+        _remaining = Duration.zero;
+        _isFinished = true;
+      } else {
+        _remaining = _targetTime.difference(now);
+      }
+    });
+
+    if (!_isFinished) {
+      Future.delayed(const Duration(seconds: 1), _updateTimer);
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    final dayName = days[date.weekday % 7];
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '$dayName, $day-$month-$year\n$hour.$minute WIB';
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '00:$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          _formatDate(_targetTime),
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: _isFinished ? const Color(0xFFFEE2E2) : const Color(0xFFE3F2FD),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            _formatDuration(_remaining),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: _isFinished ? const Color(0xFFEF4444) : const Color(0xFF2979FF),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// E-SKKP VIEWER PAGE
+// ─────────────────────────────────────────────
+class EskkpViewerPage extends StatelessWidget {
+  const EskkpViewerPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2979FF),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('Bukti E-SKKP', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 16)),
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, size: 28),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          panEnabled: true, // Set to false to prevent panning.
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Image.asset(
+            'assets/eskkp_dummy.png',
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );

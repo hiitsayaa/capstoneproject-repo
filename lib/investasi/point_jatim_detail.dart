@@ -1,11 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_application_1/investasi/point_jatim_investasi.dart';
 import 'package:flutter_application_1/investasi/point_jatim_ajukan.dart';
 
-class PointJatimDetailPage extends StatelessWidget {
+class PointJatimDetailPage extends StatefulWidget {
   final InvestProject project;
 
   const PointJatimDetailPage({super.key, required this.project});
+
+  @override
+  State<PointJatimDetailPage> createState() => _PointJatimDetailPageState();
+}
+
+class _PointJatimDetailPageState extends State<PointJatimDetailPage> {
+  late final WebViewController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    final htmlString = '''
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { margin: 0; padding: 0; }
+          iframe { width: 100%; height: 100vh; border: none; }
+        </style>
+      </head>
+      <body>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2146868.8659202703!2d112.19628731290152!3d-7.557824488930637!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2da393f79feeb5c5%3A0x1030bfbca7cb850!2sEast%20Java!5e0!3m2!1sen!2sid!4v1781027130663!5m2!1sen!2sid" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </body>
+      </html>
+    ''';
+    _mapController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString(htmlString);
+  }
 
   void _showHubungiPicDialog(BuildContext context) {
     showModalBottomSheet(
@@ -33,9 +66,9 @@ class PointJatimDetailPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildContactCard(Icons.phone, '081122334455'),
+              _buildContactCard(context, Icons.phone, '081122334455', 'phone'),
               const SizedBox(height: 12),
-              _buildContactCard(Icons.email, 'budi@gmail.com'),
+              _buildContactCard(context, Icons.email, 'budi@gmail.com', 'email'),
               const SizedBox(height: 32),
             ],
           ),
@@ -44,31 +77,68 @@ class PointJatimDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildContactCard(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3F2FD),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildContactCard(BuildContext context, IconData icon, String text, String type) {
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(type == 'phone' ? 'No Telepon' : 'Email', style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 18)),
+            content: const Text('Pilih aksi yang ingin dilakukan:', style: TextStyle(fontFamily: 'Poppins', fontSize: 14)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: text));
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Teks disalin ke clipboard!')));
+                },
+                child: const Text('Salin', style: TextStyle(color: Color(0xFF2979FF), fontFamily: 'Poppins')),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2979FF),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final url = type == 'phone' ? 'tel:$text' : 'mailto:$text';
+                  if (await canLaunchUrl(Uri.parse(url))) {
+                    await launchUrl(Uri.parse(url));
+                  }
+                },
+                child: Text(type == 'phone' ? 'Panggil' : 'Kirim Email', style: const TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+              ),
+            ],
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: const Color(0xFF2979FF), size: 20),
             ),
-            child: Icon(icon, color: const Color(0xFF2979FF), size: 20),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            text,
-            style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Text(
+              text,
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -107,7 +177,16 @@ class PointJatimDetailPage extends StatelessWidget {
                     height: 200,
                     width: double.infinity,
                     color: const Color(0xFFE5E7EB),
-                    child: const Center(child: Icon(Icons.image, size: 64, color: Color(0xFF9CA3AF))),
+                    child: widget.project.imagePath.startsWith('http')
+                      ? Image.network(
+                          widget.project.imagePath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.image, size: 64, color: Color(0xFF9CA3AF))),
+                        )
+                      : Image.asset(
+                          widget.project.imagePath,
+                          fit: BoxFit.cover,
+                        ),
                   ),
                   
                   Padding(
@@ -124,15 +203,13 @@ class PointJatimDetailPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
-                            project.sektor,
+                            widget.project.sektor,
                             style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF)),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        
-                        // Title
                         Text(
-                          project.name,
+                          widget.project.name,
                           style: const TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
                         ),
                         const SizedBox(height: 8),
@@ -143,7 +220,7 @@ class PointJatimDetailPage extends StatelessWidget {
                             const Icon(Icons.location_on_outlined, color: Color(0xFF6B7280), size: 16),
                             const SizedBox(width: 4),
                             Text(
-                              project.location,
+                              widget.project.location,
                               style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280)),
                             ),
                           ],
@@ -153,7 +230,7 @@ class PointJatimDetailPage extends StatelessWidget {
                         // Nilai Investasi
                         const Text('Nilai Investasi', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
                         const SizedBox(height: 4),
-                        Text(project.nilaiInvestasiStr, style: const TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                        Text(widget.project.nilaiInvestasiStr, style: const TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
                         const SizedBox(height: 24),
                         
                         // Analisis Finansial
@@ -169,11 +246,11 @@ class PointJatimDetailPage extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _FinansialItem(label: 'IRR', value: project.irrStr),
+                              _FinansialItem(label: 'IRR', value: widget.project.irrStr),
                               const SizedBox(width: 1, height: 40, child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFFE5E7EB)))),
-                              _FinansialItem(label: 'NPV', value: project.npvStr),
+                              _FinansialItem(label: 'NPV', value: widget.project.npvStr),
                               const SizedBox(width: 1, height: 40, child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFFE5E7EB)))),
-                              const _FinansialItem(label: 'Payback Period', value: '5.5 Tahun'),
+                              _FinansialItem(label: 'Payback Period', value: widget.project.paybackPeriod),
                             ],
                           ),
                         ),
@@ -182,9 +259,9 @@ class PointJatimDetailPage extends StatelessWidget {
                         // Informasi Proyek
                         const Text('Informasi Proyek', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Proyek Integrated Farming Sapi Perah merupakan proyek strategis yang diinisiasi oleh Dinas Peternakan Pemerintah Propinsi Jawa Timur dalam program I-PRO (Investment Project Ready to Offer) dalam rangka mendukung pengembangan investasi yang berbasis ESG (Environmental, Social and Governance) serta peningkatan industri pertanian dan peternakan dalam rangka program ketahanan pangan di Indonesia. Hal ini sesuai dengan trend investasi global pada program ekonomi hijau secara berkelanjutan. Lokasi proyek dikembangkan pada wilayah Desa Ngroto Kecamatan Pujon, Kabupaten Malang Propinsi Jawa Timur dengan dasar pertimbangan Kesesuaian Lahan yang telah memenuhi aspek geografi, topografi, demografi dan aspek-aspek pendukung strategis lainnya seperti dekat dengan potensi market, sumber pakan alamiah dan Lokasi merupakan Klaster terbesar produksi Susu sapi segar di jawa timur.',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280), height: 1.6),
+                        Text(
+                          widget.project.description,
+                          style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280), height: 1.6),
                         ),
                         const SizedBox(height: 24),
                         
@@ -200,7 +277,10 @@ class PointJatimDetailPage extends StatelessWidget {
                           ),
                           child: Stack(
                             children: [
-                              const Center(child: Icon(Icons.map, size: 64, color: Color(0xFFD1D5DB))), // Placeholder for map
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: WebViewWidget(controller: _mapController),
+                              ),
                               Positioned(
                                 bottom: 12,
                                 left: 12,
@@ -217,7 +297,7 @@ class PointJatimDetailPage extends StatelessWidget {
                                     children: [
                                       const Icon(Icons.location_on, color: Color(0xFF2979FF), size: 16),
                                       const SizedBox(width: 8),
-                                      Text(project.location, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+                                      Text(widget.project.location, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
                                     ],
                                   ),
                                 ),
@@ -237,7 +317,14 @@ class PointJatimDetailPage extends StatelessWidget {
                             color: const Color(0xFFF3F4F6),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Center(child: Icon(Icons.image, size: 64, color: Color(0xFF9CA3AF))),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'assets/point_infomemo.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.image, size: 64, color: Color(0xFF9CA3AF))),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -275,7 +362,7 @@ class PointJatimDetailPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const PointJatimAjukanPage()),
+                        MaterialPageRoute(builder: (_) => PointJatimAjukanPage(projectId: widget.project.id)),
                       );
                     },
                     style: ElevatedButton.styleFrom(

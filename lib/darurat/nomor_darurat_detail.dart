@@ -3,39 +3,76 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_application_1/darurat/services/emergency_service.dart';
 
-Future<void> _handleCallDetail(BuildContext context, String number, String name) async {
+Future<void> _handleCallDetail(
+  BuildContext context,
+  String number,
+  String name,
+) async {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(name, style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
-      content: Text('Nomor: $number\nPilih tindakan yang ingin dilakukan.', style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280))),
+      title: Text(
+        name,
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Text(
+        'Nomor: $number\nPilih tindakan yang ingin dilakukan.',
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 13,
+          color: Color(0xFF6B7280),
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: number));
             Navigator.pop(ctx);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nomor $number disalin ke clipboard!')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Nomor $number disalin ke clipboard!')),
+            );
           },
-          child: const Text('Salin Nomor', style: TextStyle(fontFamily: 'Poppins', color: Color(0xFF2979FF))),
+          child: const Text(
+            'Salin Nomor',
+            style: TextStyle(fontFamily: 'Poppins', color: Color(0xFF2979FF)),
+          ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2979FF),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           onPressed: () async {
             Navigator.pop(ctx);
-            final Uri phoneUri = Uri(scheme: 'tel', path: number.replaceAll(RegExp(r'[^0-9]'), ''));
+            final Uri phoneUri = Uri(
+              scheme: 'tel',
+              path: number.replaceAll(RegExp(r'[^0-9]'), ''),
+            );
             if (await canLaunchUrl(phoneUri)) {
               await launchUrl(phoneUri);
             } else {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat melakukan panggilan pada perangkat ini.')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Tidak dapat melakukan panggilan pada perangkat ini.',
+                    ),
+                  ),
+                );
               }
             }
           },
-          child: const Text('Telepon', style: TextStyle(fontFamily: 'Poppins', color: Colors.white)),
+          child: const Text(
+            'Telepon',
+            style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+          ),
         ),
       ],
     ),
@@ -123,17 +160,39 @@ class _NomorDaruratDetailPageState extends State<NomorDaruratDetailPage> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(color: Color(0xFFE3F2FD), shape: BoxShape.circle),
-                    child: const Icon(Icons.location_on, color: Color(0xFF2979FF), size: 20),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE3F2FD),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Color(0xFF2979FF),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.wilayah, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                        Text(
+                          widget.wilayah,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        const Text('Layanan darurat di wilayah ini', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
+                        const Text(
+                          'Layanan darurat di wilayah ini',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 10,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -148,7 +207,14 @@ class _NomorDaruratDetailPageState extends State<NomorDaruratDetailPage> {
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(20.0),
-                  child: Text('Tidak ada kontak darurat untuk wilayah ini.', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280))),
+                  child: Text(
+                    'Tidak ada kontak darurat untuk wilayah ini.',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
                 ),
               )
             else
@@ -158,13 +224,17 @@ class _NomorDaruratDetailPageState extends State<NomorDaruratDetailPage> {
                   children: [
                     _buildSectionHeader(entry.key),
                     ...entry.value.map((contact) {
-                      return _buildContactCard(context, contact.name, contact.phone);
+                      return _buildContactCard(
+                        context,
+                        contact.name,
+                        contact.phone,
+                      );
                     }),
                     const SizedBox(height: 16),
                   ],
                 );
-              }).toList(),
-              
+              }),
+
             const SizedBox(height: 32),
           ],
         ),
@@ -177,7 +247,12 @@ class _NomorDaruratDetailPageState extends State<NomorDaruratDetailPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF1A1A1A),
+        ),
       ),
     );
   }
@@ -198,9 +273,24 @@ class _NomorDaruratDetailPageState extends State<NomorDaruratDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(number, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
+                Text(
+                  number,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
               ],
             ),
           ),
@@ -212,7 +302,11 @@ class _NomorDaruratDetailPageState extends State<NomorDaruratDetailPage> {
                 color: Color(0xFFE3F2FD),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.phone, color: Color(0xFF2979FF), size: 20),
+              child: const Icon(
+                Icons.phone,
+                color: Color(0xFF2979FF),
+                size: 20,
+              ),
             ),
           ),
         ],

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 
 @Injectable()
@@ -35,10 +35,20 @@ export class HoaksService {
   }
 
   async report(payload: { judul_laporan: string; deskripsi_kejadian: string; url_bukti?: string }, nik?: string) {
+    if (payload.deskripsi_kejadian && payload.deskripsi_kejadian.trim().length > 0) {
+      const existing = await this.database.queryOne(
+        `SELECT id FROM hoaks.hoax_reports WHERE deskripsi_kejadian = $1`,
+        [payload.deskripsi_kejadian]
+      );
+      if (existing) {
+        throw new HttpException('Konten ini sudah pernah dilaporkan sebagai hoaks', HttpStatus.CONFLICT);
+      }
+    }
+
     const dbReport = await this.database.queryOne<Record<string, unknown>>(
       `
         INSERT INTO hoaks.hoax_reports (user_id, judul_laporan, deskripsi_kejadian, url_bukti, status_laporan)
-        VALUES ($1, $2, $3, $4, 'Pending')
+        VALUES ($1, $2, $3, $4, 'Sedang Diverifikasi')
         RETURNING id, user_id, judul_laporan, deskripsi_kejadian, url_bukti, status_laporan
       `,
       [nik ?? 'anonymous', payload.judul_laporan, payload.deskripsi_kejadian, payload.url_bukti ?? null],
@@ -55,7 +65,7 @@ export class HoaksService {
       id: `report-${Date.now()}`,
       user_id: nik ?? 'anonymous',
       ...payload,
-      status_laporan: 'Pending',
+      status_laporan: 'Sedang Diverifikasi',
       submitted_at: new Date().toISOString(),
     };
     this.reports.push(report);

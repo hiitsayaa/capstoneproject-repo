@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/hoaks/halaman_klinik_hoaks.dart';
+import 'package:flutter_application_1/hoaks/services/hoaks_service.dart';
 
 class SemuaBeritaHoaksPage extends StatefulWidget {
   const SemuaBeritaHoaksPage({super.key});
@@ -20,8 +21,35 @@ class _SemuaBeritaHoaksPageState extends State<SemuaBeritaHoaksPage> {
     'Hate Speech',
   ];
 
+  List<BeritaHoaksItem> _articles = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchArticles();
+  }
+
+  Future<void> _fetchArticles() async {
+    try {
+      final articles = await HoaksService.getArticles();
+      if (mounted) {
+        setState(() {
+          _articles = articles;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   List<BeritaHoaksItem> get _filteredBerita {
-    var list = daftarBeritaHoaks.toList();
+    var list = _articles.toList();
 
     // Apply tag filter
     if (_selectedFilter != 'Semua') {
@@ -113,28 +141,13 @@ class _SemuaBeritaHoaksPageState extends State<SemuaBeritaHoaksPage> {
                 Color chipBorderColor;
 
                 if (isSelected) {
-                  switch (filter) {
-                    case 'Hoaks':
-                      chipColor = const Color(0xFFE53935);
-                      break;
-                    case 'Fakta':
-                      chipColor = const Color(0xFF43A047);
-                      break;
-                    case 'Disinformasi':
-                      chipColor = const Color(0xFFFF6F00);
-                      break;
-                    case 'Hate Speech':
-                      chipColor = const Color(0xFF7B1FA2);
-                      break;
-                    default:
-                      chipColor = const Color(0xFF2979FF);
-                  }
+                  chipColor = const Color(0xFF2979FF);
                   chipTextColor = Colors.white;
-                  chipBorderColor = chipColor;
+                  chipBorderColor = const Color(0xFF2979FF);
                 } else {
                   chipColor = Colors.white;
-                  chipTextColor = const Color(0xFF6B7280);
-                  chipBorderColor = const Color(0xFFE5E7EB);
+                  chipTextColor = const Color(0xFF2979FF);
+                  chipBorderColor = const Color(0xFF2979FF);
                 }
 
                 return GestureDetector(
@@ -182,32 +195,34 @@ class _SemuaBeritaHoaksPageState extends State<SemuaBeritaHoaksPage> {
 
           // Berita List
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off,
-                            size: 56, color: Colors.grey.shade300),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Tidak ada berita ditemukan',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 14,
-                            color: Color(0xFF9CA3AF),
-                          ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filtered.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off,
+                                size: 56, color: Colors.grey.shade300),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Tidak ada berita ditemukan',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 14,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      return _buildBeritaCard(filtered[index]);
-                    },
-                  ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          return _buildBeritaCard(filtered[index]);
+                        },
+                      ),
           ),
         ],
       ),
@@ -261,42 +276,17 @@ class _SemuaBeritaHoaksPageState extends State<SemuaBeritaHoaksPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
-              width: 80,
-              height: 80,
+              width: 100,
+              height: 100,
               color: Colors.grey.shade200,
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(Icons.article,
-                        color: Colors.grey.shade400, size: 28),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: tagBgColor,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(10),
-                          bottomRight: Radius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        berita.tag,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                          color: tagColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: Image.network(
+                berita.imageAsset ?? 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=200',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Icon(Icons.article, color: Colors.grey.shade400, size: 28),
+                  );
+                },
               ),
             ),
           ),
@@ -357,16 +347,7 @@ class _SemuaBeritaHoaksPageState extends State<SemuaBeritaHoaksPage> {
                 ),
                 const SizedBox(height: 4),
 
-                // Category
-                Text(
-                  berita.category,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-                const SizedBox(height: 6),
+
 
                 // Baca Selengkapnya
                 GestureDetector(

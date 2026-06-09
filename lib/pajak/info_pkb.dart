@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/pajak/cek_pajak_lain.dart';
 import 'package:flutter_application_1/pajak/detail_kendaraan.dart';
 import 'package:flutter_application_1/pajak/services/bapenda_service.dart';
+import 'package:flutter_application_1/pajak/pembayaran_pkb.dart';
 
 class InfoPkbPage extends StatefulWidget {
   const InfoPkbPage({super.key});
@@ -23,9 +24,21 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
 
   Future<void> _fetchVehicles() async {
     final vehicles = await _bapendaService.fetchMyVehicles();
+    
+    List<Map<String, dynamic>> enrichedVehicles = [];
+    for (var v in vehicles) {
+      final detail = await _bapendaService.checkPkb(v['nopol']);
+      if (detail != null) {
+        enrichedVehicles.add({
+          'vehicle': detail['vehicle'],
+          'latestBill': (detail['bills'] as List).isNotEmpty ? detail['bills'][0] : null,
+        });
+      }
+    }
+
     if (mounted) {
       setState(() {
-        _myVehicles = vehicles;
+        _myVehicles = enrichedVehicles;
         _isLoading = false;
       });
     }
@@ -92,45 +105,46 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                       child: const Center(
                         child: Text(
                           'Tidak ada data kendaraan ditemukan.',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280)),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: Color(0xFF6B7280),
+                          ),
                         ),
                       ),
                     )
                   else
-                    ..._myVehicles.map((vehicle) {
-                      // Ini contoh mapping sederhana. Di API asli, status pembayaran mungkin butuh dicek di tagihan.
-                      // Untuk sementara, kita asumsikan jika tidak ada tagihan, maka statusnya belum bayar (dummy logic).
+                    ..._myVehicles.map((item) {
+                      final vehicle = item['vehicle'];
+                      final latestBill = item['latestBill'];
+                      final bool isPaid = latestBill == null || latestBill['status'] == 'Paid';
+                      final String jatuhTempo = latestBill != null ? (latestBill['due_date'] ?? '-') : '-';
+                      
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: _buildVehicleCard(
                           context,
+                          vehicleData: vehicle,
+                          latestBillData: latestBill,
                           merk: (vehicle['merk'] as String?)?.toUpperCase() ?? 'UNKNOWN',
                           nopol: vehicle['nopol'] ?? '-',
-                          jatuhTempo: 'Segera', // Idealnya diambil dari tagihan terbaru
-                          isPaid: false,
-                          iconData: Icons.directions_car,
+                          jatuhTempo: jatuhTempo,
+                          isPaid: isPaid,
+                          paidDate: isPaid && latestBill != null ? latestBill['paid_at'] : null,
                         ),
                       );
-                    }).toList(),
+                    }),
 
                   const SizedBox(height: 16),
 
                   const Text(
-                    'Informasi Pajak Kendaraan',
+                    'Informasi Pajak Kendaraan Lain',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1A1A1A),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Menu Cek Pajak Kendaraan Pribadi
-                  _buildMenuAction(
-                    icon: Icons.directions_car_outlined,
-                    title: 'Cek Pajak Kendaraan Pribadi',
-                    onTap: () {},
                   ),
                   const SizedBox(height: 12),
 
@@ -141,7 +155,9 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CekPajakLainPage()),
+                        MaterialPageRoute(
+                          builder: (_) => const CekPajakLainPage(),
+                        ),
                       );
                     },
                   ),
@@ -153,12 +169,13 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
 
   Widget _buildVehicleCard(
     BuildContext context, {
+    required Map<String, dynamic> vehicleData,
+    Map<String, dynamic>? latestBillData,
     required String merk,
     required String nopol,
     required String jatuhTempo,
     required bool isPaid,
     String? paidDate,
-    required IconData iconData,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -223,52 +240,39 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                     ],
                   ),
                 ),
-                // Vehicle Icon Placeholder & Detail Button
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => DetailKendaraanPage(nopol: nopol)),
-                        );
-                      },
-                      child: Row(
-                        children: const [
-                          Icon(Icons.open_in_new,
-                              size: 14, color: Color(0xFF2979FF)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Detail',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2979FF),
-                            ),
-                          ),
-                        ],
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailKendaraanPage(nopol: nopol),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: 80,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(8),
+                    );
+                  },
+                  child: Row(
+                    children: const [
+                      Icon(
+                        Icons.open_in_new,
+                        size: 14,
+                        color: Color(0xFF2979FF),
                       ),
-                      child: Icon(iconData,
-                          size: 40, color: const Color(0xFF9CA3AF)),
-                    ),
-                  ],
+                      SizedBox(width: 4),
+                      Text(
+                        'Detail',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2979FF),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          
+
           // Mid section (Jatuh Tempo & Status)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -299,10 +303,14 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isPaid ? const Color(0xFF43A047) : const Color(0xFFE53935),
+                    color: isPaid
+                        ? const Color(0xFF43A047)
+                        : const Color(0xFFE53935),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -318,19 +326,23 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
               ],
             ),
           ),
-          
+
           const Divider(height: 1, color: Color(0xFFE5E7EB)),
 
           // Bottom section (Action / Status info)
           InkWell(
-            onTap: isPaid
+            onTap: isPaid || latestBillData == null
                 ? null
                 : () {
-                    // Navigate to payment/detail
+                    // Navigate to payment
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => DetailKendaraanPage(nopol: nopol)),
+                        builder: (_) => PembayaranPkbPage(
+                          vehicle: vehicleData,
+                          latestBill: latestBillData,
+                        ),
+                      ),
                     );
                   },
             child: Container(
@@ -340,8 +352,12 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    isPaid ? Icons.check_circle : Icons.account_balance_wallet_outlined,
-                    color: isPaid ? const Color(0xFF43A047) : const Color(0xFF2979FF),
+                    isPaid
+                        ? Icons.check_circle
+                        : Icons.account_balance_wallet_outlined,
+                    color: isPaid
+                        ? const Color(0xFF43A047)
+                        : const Color(0xFF2979FF),
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -351,7 +367,9 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
                       fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isPaid ? const Color(0xFF43A047) : const Color(0xFF2979FF),
+                      color: isPaid
+                          ? const Color(0xFF43A047)
+                          : const Color(0xFF2979FF),
                     ),
                   ),
                 ],
@@ -380,7 +398,11 @@ class _InfoPkbPageState extends State<InfoPkbPage> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFFFF9800), size: 24), // Using orange icon like the design
+            Icon(
+              icon,
+              color: const Color(0xFFFF9800),
+              size: 24,
+            ), // Using orange icon like the design
             const SizedBox(width: 16),
             Expanded(
               child: Text(

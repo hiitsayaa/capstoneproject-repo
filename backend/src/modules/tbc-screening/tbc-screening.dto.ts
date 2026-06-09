@@ -23,6 +23,63 @@ export class SubmitTbcScreeningDto {
   @IsString()
   kabupaten_kota?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  is_self?: boolean;
+
+  @IsOptional()
+  @IsString()
+  pelapor_nama?: string;
+
+  @IsOptional()
+  @IsString()
+  pelapor_kelompok?: string;
+
+  @IsOptional()
+  @IsString()
+  pelapor_instansi?: string;
+
+  @IsOptional()
+  @IsString()
+  pelapor_telepon?: string;
+
+  @IsOptional()
+  @IsString()
+  jenis_kelamin?: string;
+
+  @IsOptional()
+  @IsString()
+  telepon?: string;
+
+  @IsOptional()
+  @IsString()
+  tanggal_lahir?: string;
+
+  @IsOptional()
+  usia?: number;
+
+  @IsOptional()
+  berat_badan?: number;
+
+  @IsOptional()
+  tinggi_badan?: number;
+
+  @IsOptional()
+  @IsString()
+  alamat?: string;
+
+  @IsOptional()
+  @IsString()
+  pekerjaan?: string;
+
+  @IsOptional()
+  @IsString()
+  kecamatan?: string;
+
+  @IsOptional()
+  @IsString()
+  kelurahan?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ScreeningAnswerDto)

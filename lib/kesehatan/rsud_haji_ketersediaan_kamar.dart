@@ -1,278 +1,167 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter_application_1/kesehatan/rsud_haji_detail_kamar.dart';
 import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
-// ─────────────────────────────────────────────
-// Data Model
-// ─────────────────────────────────────────────
-
-class KamarData {
+class KamarRawatHaji {
   final String nama;
-  final String kategoriMedis; // 'Isolasi', 'Intensif', 'Reguler'
-  final String kelas; // 'Kelas I', 'Kelas II', 'Kelas III', 'VIP', 'VVIP'
-  final String jenisKelamin; // 'Laki-laki', 'Perempuan', 'Campuran'
+  final String kategori; // Isolasi, Intensif, Reguler
+  final String status; // Tersedia, Terbatas, Penuh
+  final String kelas;
+  final String jenisKelamin; // Laki-laki, Perempuan
   final int kapasitas;
   final int terisi;
-  final String tarif;
-  final List<String> fasilitas;
+  final int tersedia;
 
-  const KamarData({
+  KamarRawatHaji({
     required this.nama,
-    required this.kategoriMedis,
+    required this.kategori,
+    required this.status,
     required this.kelas,
     required this.jenisKelamin,
     required this.kapasitas,
     required this.terisi,
-    required this.tarif,
-    required this.fasilitas,
+    required this.tersedia,
   });
 
-  int get tersedia => kapasitas - terisi;
-
-  String get statusKetersediaan {
-    if (tersedia == 0) return 'Penuh';
-    if (tersedia <= 2) return 'Terbatas';
-    return 'Tersedia';
-  }
-
-  factory KamarData.fromJson(Map<String, dynamic> json) {
+  factory KamarRawatHaji.fromJson(Map<String, dynamic> json) {
     final kapasitasTotal = json['kapasitas_total'] ?? 0;
     final kamarTersedia = json['kamar_tersedia'] ?? 0;
     final terisi = kapasitasTotal - kamarTersedia;
 
-    return KamarData(
+    return KamarRawatHaji(
       nama: json['kelas_kamar'] ?? '',
-      kategoriMedis: 'Reguler',
+      kategori: 'Reguler',
+      status: kamarTersedia > 0 ? 'Tersedia' : 'Penuh',
       kelas: json['kelas_kamar'] ?? '',
       jenisKelamin: 'Semua',
       kapasitas: kapasitasTotal,
       terisi: terisi,
-      tarif: 'Sesuai Kelas',
-      fasilitas: [],
+      tersedia: kamarTersedia,
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// Sample Data
-// ─────────────────────────────────────────────
-
-// Removed mock daftarKamar// ─────────────────────────────────────────────
-// Filter State
-// ─────────────────────────────────────────────
-
-class FilterState {
-  String jenisKelamin; // 'Semua', 'Laki-laki', 'Perempuan'
-  String kategoriMedis; // 'Semua kategori', 'Isolasi', 'Intensif', 'Reguler'
-  String kelasRuangan; // 'Semua kelas', 'Kelas I', 'Kelas II', 'Kelas III', 'VIP', 'VVIP'
-
-  FilterState({
-    this.jenisKelamin = 'Semua',
-    this.kategoriMedis = 'Semua kategori',
-    this.kelasRuangan = 'Semua kelas',
-  });
-
-  FilterState copy() => FilterState(
-    jenisKelamin: jenisKelamin,
-    kategoriMedis: kategoriMedis,
-    kelasRuangan: kelasRuangan,
-  );
-
-  bool get isActive =>
-      jenisKelamin != 'Semua' ||
-      kategoriMedis != 'Semua kategori' ||
-      kelasRuangan != 'Semua kelas';
-
-  void reset() {
-    jenisKelamin = 'Semua';
-    kategoriMedis = 'Semua kategori';
-    kelasRuangan = 'Semua kelas';
-  }
-
-  int get activeFilterCount {
-    int count = 0;
-    if (jenisKelamin != 'Semua') count++;
-    if (kategoriMedis != 'Semua kategori') count++;
-    if (kelasRuangan != 'Semua kelas') count++;
-    return count;
-  }
-}
-
-// ─────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────
 
 class RsudHajiKetersediaanKamarPage extends StatefulWidget {
   const RsudHajiKetersediaanKamarPage({super.key});
 
   @override
-  State<RsudHajiKetersediaanKamarPage> createState() =>
-      _RsudHajiKetersediaanKamarPageState();
+  State<RsudHajiKetersediaanKamarPage> createState() => _RsudHajiKetersediaanKamarPageState();
 }
 
-class _RsudHajiKetersediaanKamarPageState
-    extends State<RsudHajiKetersediaanKamarPage> {
-  final FilterState _filter = FilterState();
-  late DateTime _lastUpdated;
-  
-  final RsudService _rsudService = RsudService();
+class _RsudHajiKetersediaanKamarPageState extends State<RsudHajiKetersediaanKamarPage> {
   bool _isLoading = true;
-  List<KamarData> _rooms = [];
+  List<KamarRawatHaji> _rooms = [];
+  String _lastUpdated = '';
 
+  String _selectedGender = 'Semua';
+  List<String> _selectedKategori = ['Semua kategori'];
+  List<String> _selectedKelas = ['Semua kelas'];
+
+  List<KamarRawatHaji> get _filteredRooms {
+    return _rooms.where((k) {
+      final matchGender = _selectedGender == 'Semua' || k.jenisKelamin == _selectedGender;
+      final matchKategori = _selectedKategori.contains('Semua kategori') || _selectedKategori.contains(k.kategori);
+      final matchKelas = _selectedKelas.contains('Semua kelas') || _selectedKelas.contains(k.kelas);
+      return matchGender && matchKategori && matchKelas;
+    }).toList();
+  }
+  
   @override
   void initState() {
     super.initState();
-    _lastUpdated = DateTime.now();
+    _updateTimestamp();
     _fetchRooms();
+  }
+
+  void _updateTimestamp() {
+    final now = DateTime.now();
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    setState(() {
+      _lastUpdated = '${now.day} ${months[now.month - 1]} ${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
   }
 
   Future<void> _fetchRooms() async {
     setState(() => _isLoading = true);
-    final data = await _rsudService.fetchRooms('haji');
-    if (mounted) {
-      setState(() {
-        _rooms = data.map((e) => KamarData.fromJson(e as Map<String, dynamic>)).toList();
-        _isLoading = false;
-      });
+    try {
+      final rsudService = RsudService();
+      final roomsData = await rsudService.fetchRooms('30000000-0000-0000-0000-000000000003'); // Haji
+
+      final List<KamarRawatHaji> fetchedRooms = [];
+      for (var room in roomsData) {
+        String namaKelas = room['kelas_kamar']?.toString() ?? 'Unknown';
+        int kapasitas = room['kapasitas_total'] ?? 0;
+        int tersedia = room['kamar_tersedia'] ?? 0;
+        int terisi = kapasitas - tersedia;
+        
+        String status = 'Tersedia';
+        if (tersedia == 0) status = 'Penuh';
+        else if (tersedia <= 2) status = 'Terbatas';
+
+        // Dummy data for kategori and jenisKelamin for variety
+        String kategori = 'Reguler';
+        String jenisKelamin = 'Semua';
+        if (namaKelas.toLowerCase().contains('vip') || namaKelas.toLowerCase().contains('icu')) {
+          kategori = 'Intensif';
+        } else if (namaKelas == 'II' || namaKelas == 'I') {
+          kategori = 'Isolasi';
+          jenisKelamin = namaKelas == 'II' ? 'Perempuan' : 'Laki Laki';
+        }
+
+        fetchedRooms.add(KamarRawatHaji(
+          nama: 'Kelas $namaKelas'.replaceAll('Kelas VIP', 'VIP').replaceAll('Kelas ICU', 'ICU'),
+          kategori: kategori,
+          status: status,
+          kelas: namaKelas,
+          jenisKelamin: jenisKelamin,
+          kapasitas: kapasitas,
+          terisi: terisi,
+          tersedia: tersedia,
+        ));
+      }
+
+      if (mounted) {
+        setState(() {
+          _rooms = fetchedRooms;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  List<KamarData> get _filteredKamar {
-    return _rooms.where((kamar) {
-      if (_filter.jenisKelamin != 'Semua' &&
-          kamar.jenisKelamin != _filter.jenisKelamin) {
-        return false;
-      }
-      if (_filter.kategoriMedis != 'Semua kategori' &&
-          kamar.kategoriMedis != _filter.kategoriMedis) {
-        return false;
-      }
-      if (_filter.kelasRuangan != 'Semua kelas' &&
-          kamar.kelas != _filter.kelasRuangan) {
-        return false;
-      }
-      return true;
-    }).toList();
-  }
-
-  int get _totalKapasitas => _filteredKamar.fold(0, (sum, k) => sum + k.kapasitas);
-  int get _totalTerisi => _filteredKamar.fold(0, (sum, k) => sum + k.terisi);
-  int get _totalTersedia => _filteredKamar.fold(0, (sum, k) => sum + k.tersedia);
-
-  void _refresh() {
-    setState(() {
-      _lastUpdated = DateTime.now();
-    });
-    _fetchRooms();
-  }
-
-  void _showFilterDialog() async {
-    final tempFilter = _filter.copy();
-
-    final result = await showModalBottomSheet<bool>(
+  void _showFilterModal() {
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _FilterBottomSheet(filter: tempFilter),
-    );
-
-    if (result == true) {
-      setState(() {
-        _filter.jenisKelamin = tempFilter.jenisKelamin;
-        _filter.kategoriMedis = tempFilter.kategoriMedis;
-        _filter.kelasRuangan = tempFilter.kelasRuangan;
-      });
-    }
-  }
-
-  void _showResetFilterConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Reset Filter',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: const Text(
-          'Apakah Anda ingin mereset semua filter?',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 13,
-            color: Color(0xFF6B7280),
-          ),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() => _filter.reset());
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Reset',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (context) {
+        return _FilterModalContent(
+          initialGender: _selectedGender,
+          initialMedis: _selectedKategori,
+          initialKelas: _selectedKelas,
+          availableKelas: _rooms.map((e) => e.kelas).toSet().toList(),
+          onApply: (gender, medis, kelas) {
+            setState(() {
+              _selectedGender = gender;
+              _selectedKategori = medis;
+              _selectedKelas = kelas;
+            });
+          },
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredList = _filteredKamar;
-    final dateFormat = DateFormat('dd MMMM yyyy HH:mm:ss', 'id_ID');
-
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -294,342 +183,114 @@ class _RsudHajiKetersediaanKamarPageState
         ),
       ),
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Last updated
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Terakhir diperbarui: ${dateFormat.format(_lastUpdated)}',
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _refresh,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.refresh,
-                            size: 14,
-                            color: Color(0xFF43A047),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Refresh',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF43A047),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Summary Card
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Ringkasan Keseluruhan',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _buildSummaryItem(
-                          value: _totalKapasitas.toString(),
-                          label: 'Kapasitas',
-                          color: const Color(0xFF2979FF),
-                          bgColor: const Color(0xFFE3F2FD),
-                        ),
-                        const SizedBox(width: 12),
-                        _buildSummaryItem(
-                          value: _totalTerisi.toString(),
-                          label: 'Terisi',
-                          color: const Color(0xFFEF4444),
-                          bgColor: const Color(0xFFFEE2E2),
-                        ),
-                        const SizedBox(width: 12),
-                        _buildSummaryItem(
-                          value: _totalTersedia.toString(),
-                          label: 'Tersedia',
-                          color: const Color(0xFF43A047),
-                          bgColor: const Color(0xFFE8F5E9),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Daftar Kamar header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Timestamp and Refresh
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Daftar Kamar',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
+                  Text(
+                    'Terakhir diperbarui: $_lastUpdated',
+                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
                   ),
-                  GestureDetector(
-                    onTap: _showFilterDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color:
-                              _filter.isActive
-                                  ? const Color(0xFF43A047)
-                                  : const Color(0xFFE5E7EB),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.tune,
-                            size: 14,
-                            color:
-                                _filter.isActive
-                                    ? const Color(0xFF43A047)
-                                    : const Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Tampilkan Filter',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color:
-                                  _filter.isActive
-                                      ? const Color(0xFF43A047)
-                                      : const Color(0xFF6B7280),
-                            ),
-                          ),
-                        ],
-                      ),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      _updateTimestamp();
+                      _fetchRooms();
+                    },
+                    icon: const Icon(Icons.refresh, size: 14, color: Color(0xFF2979FF)),
+                    label: const Text('Refresh', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF2979FF)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      minimumSize: const Size(0, 28),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
 
-            // Filter chips (shown when filter is active)
-            if (_filter.isActive)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                child: Row(
+              // Ringkasan Keseluruhan
+              const Text('Ringkasan Keseluruhan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.kapasitas).toString(), 'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                  const SizedBox(width: 12),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.terisi).toString(), 'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+                  const SizedBox(width: 12),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.tersedia).toString(), 'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // Daftar Kamar Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Daftar Kamar', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                  OutlinedButton.icon(
+                    onPressed: _showFilterModal,
+                    icon: const Icon(Icons.tune, size: 14, color: Color(0xFF2979FF)),
+                    label: const Text('Tambahkan filter', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF2979FF)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      minimumSize: const Size(0, 32),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+
+
+              // List of Rooms
+              _isLoading 
+                ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
+                : _filteredRooms.isEmpty 
+                  ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada kamar tersedia')))
+                  : Column(
+                      children: _filteredRooms.map((kamar) => _buildRoomCard(kamar)).toList(),
+                    ),
+              
+              const SizedBox(height: 16),
+              // Pagination Placeholder
+              if (!_isLoading && _filteredRooms.isNotEmpty)
+                Center(
+                  child: Text('Menampilkan 1-${_filteredRooms.length} dari ${_filteredRooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                ),
+              const SizedBox(height: 8),
+              if (!_isLoading && _filteredRooms.isNotEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    GestureDetector(
-                      onTap: _showFilterDialog,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFF43A047).withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.tune,
-                              size: 12,
-                              color: Color(0xFF43A047),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Ubah filter',
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF43A047),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
+                    const SizedBox(width: 16),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
+                      child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _showResetFilterConfirmation,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFFEF4444).withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.close,
-                              size: 12,
-                              color: Color(0xFFEF4444),
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              'Reset filter',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFFEF4444),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
                   ],
                 ),
-              ),
-
-            // Kamar list
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              child: Column(
-                children: [
-                  ...filteredList.map(
-                    (kamar) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildKamarCard(kamar),
-                    ),
-                  ),
-                  if (_isLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (filteredList.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 48,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Tidak ada kamar yang sesuai filter',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Footer info
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Text(
-                'Menampilkan ${filteredList.length} dari ${_rooms.length} kamar',
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 11,
-                  color: Color(0xFF9CA3AF),
-                ),
-              ),
-            ),
-
-            // FAB spacer
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _refresh,
-        backgroundColor: const Color(0xFF2979FF),
-        child: const Icon(Icons.refresh, color: Colors.white),
       ),
     );
   }
 
-  Widget _buildSummaryItem({
-    required String value,
-    required String label,
-    required Color color,
-    required Color bgColor,
-  }) {
+  Widget _buildSummaryBox(String count, String label, Color bgColor, Color textColor) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -639,58 +300,43 @@ class _RsudHajiKetersediaanKamarPageState
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: color.withValues(alpha: 0.8),
-              ),
-            ),
+            Text(count, style: TextStyle(fontFamily: 'Poppins', fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w500, color: textColor)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildKamarCard(KamarData kamar) {
+  Widget _buildRoomCard(KamarRawatHaji kamar) {
+    Color badgeColor;
+    Color badgeBg;
     Color statusColor;
-    Color statusBgColor;
-    switch (kamar.statusKetersediaan) {
-      case 'Tersedia':
-        statusColor = const Color(0xFF43A047);
-        statusBgColor = const Color(0xFFE8F5E9);
-        break;
-      case 'Terbatas':
-        statusColor = const Color(0xFFFF8F00);
-        statusBgColor = const Color(0xFFFFF8E1);
-        break;
-      default:
-        statusColor = const Color(0xFFEF4444);
-        statusBgColor = const Color(0xFFFEE2E2);
+    Color statusBg;
+
+    // Set badge style
+    if (kamar.kategori == 'Isolasi') {
+      badgeColor = const Color(0xFF1E88E5);
+      badgeBg = const Color(0xFFE3F2FD);
+    } else if (kamar.kategori == 'Intensif') {
+      badgeColor = const Color(0xFFE53935);
+      badgeBg = const Color(0xFFFFEBEE);
+    } else {
+      badgeColor = const Color(0xFF43A047);
+      badgeBg = const Color(0xFFE8F5E9);
     }
 
-    Color kategoriColor;
-    switch (kamar.kategoriMedis) {
-      case 'Isolasi':
-        kategoriColor = const Color(0xFF7B1FA2);
-        break;
-      case 'Intensif':
-        kategoriColor = const Color(0xFFEF4444);
-        break;
-      default:
-        kategoriColor = const Color(0xFF2979FF);
+    // Set status style
+    if (kamar.status == 'Tersedia') {
+      statusColor = const Color(0xFF43A047);
+      statusBg = const Color(0xFFF1F8E9);
+    } else if (kamar.status == 'Terbatas') {
+      statusColor = const Color(0xFFF57C00);
+      statusBg = const Color(0xFFFFF3E0);
+    } else {
+      statusColor = const Color(0xFFE53935);
+      statusBg = const Color(0xFFFFEBEE);
     }
 
     return GestureDetector(
@@ -703,454 +349,538 @@ class _RsudHajiKetersediaanKamarPageState
         );
       },
       child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            // Header row: name + badges
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    kamar.nama,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(kamar.nama, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(12)),
+                        child: Text(kamar.kategori, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: badgeColor)),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(12)),
+                        child: Text(kamar.status, style: TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w600, color: statusColor)),
+                      ),
+                    ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
+                  const SizedBox(height: 8),
+                  Text(kamar.jenisKelamin, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildStatItem(kamar.kapasitas.toString(), 'Kapasitas'),
+                      Container(width: 1, height: 30, color: const Color(0xFFE5E7EB), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                      _buildStatItem(kamar.terisi.toString(), 'Terisi'),
+                      Container(width: 1, height: 30, color: const Color(0xFFE5E7EB), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                      _buildStatItem(kamar.tersedia.toString(), 'Tersedia'),
+                    ],
                   ),
-                  decoration: BoxDecoration(
-                    color: kategoriColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    kamar.kategoriMedis,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: kategoriColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    kamar.statusKetersediaan,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            // Sub-info: kelas + jenis kelamin
-            Text(
-              '${kamar.kelas}  •  ${kamar.jenisKelamin}',
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 11,
-                color: Color(0xFF9CA3AF),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            // Stats row
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        kamar.kapasitas.toString(),
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      const Text(
-                        'Kapasitas',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 10,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        kamar.terisi.toString(),
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      const Text(
-                        'Terisi',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 10,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        kamar.tersedia.toString(),
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                      const Text(
-                        'Tersedia',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 10,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFFD1D5DB),
-                  size: 22,
-                ),
-              ],
-            ),
+            const SizedBox(width: 12),
+            const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF), size: 24),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String count, String label) {
+    return Column(
+      children: [
+        Text(count, style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+        Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
+      ],
+    );
+  }
+}
+
+class RsudHajiDetailKamarPage extends StatelessWidget {
+  final KamarRawatHaji kamar;
+
+  const RsudHajiDetailKamarPage({
+    super.key,
+    required this.kamar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color badgeColor;
+    Color badgeBg;
+    Color statusColor;
+    Color statusBg;
+
+    // Set badge style
+    if (kamar.kategori == 'Isolasi') {
+      badgeColor = const Color(0xFF1E88E5);
+      badgeBg = const Color(0xFFE3F2FD);
+    } else if (kamar.kategori == 'Intensif') {
+      badgeColor = const Color(0xFFE53935);
+      badgeBg = const Color(0xFFFFEBEE);
+    } else {
+      badgeColor = const Color(0xFF43A047);
+      badgeBg = const Color(0xFFE8F5E9);
+    }
+
+    // Set status style
+    if (kamar.status == 'Tersedia') {
+      statusColor = const Color(0xFF43A047);
+      statusBg = const Color(0xFFF1F8E9);
+    } else if (kamar.status == 'Terbatas') {
+      statusColor = const Color(0xFFF57C00);
+      statusBg = const Color(0xFFFFF3E0);
+    } else {
+      statusColor = const Color(0xFFE53935);
+      statusBg = const Color(0xFFFFEBEE);
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2979FF),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Detail Kamar',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, size: 28),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Main Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(kamar.nama, style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(12)),
+                          child: Text(kamar.kategori, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: badgeColor)),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(12)),
+                          child: Text(kamar.status, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(kamar.jenisKelamin, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStatItem(kamar.kapasitas.toString(), 'Kapasitas'),
+                        Container(width: 1, height: 40, color: const Color(0xFFE5E7EB)),
+                        _buildStatItem(kamar.terisi.toString(), 'Terisi'),
+                        Container(width: 1, height: 40, color: const Color(0xFFE5E7EB)),
+                        _buildStatItem(kamar.tersedia.toString(), 'Tersedia'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Tarif
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Tarif', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 16),
+                    const Text('Tarif Per Hari', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                    const SizedBox(height: 4),
+                    const Text('Rp 500.000/malam', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 8),
+                    const Text('*Belum termasuk biaya tindakan & obat', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontStyle: FontStyle.italic, color: Color(0xFF9CA3AF))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Fasilitas
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Fasilitas', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 16),
+                    _buildFacilityItem('2 Tempat Tidur'),
+                    _buildFacilityItem('1 TV LED 24 Inci'),
+                    _buildFacilityItem('1 Sofa Panjang'),
+                    _buildFacilityItem('1 Pendingin Ruangan (AC)'),
+                    _buildFacilityItem('1 Toilet Duduk & Shower'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String count, String label) {
+    return Column(
+      children: [
+        Text(count, style: const TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+      ],
+    );
+  }
+
+  Widget _buildFacilityItem(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF6B7280)),
+            ),
+            child: const Icon(Icons.check, size: 10, color: Color(0xFF6B7280)),
+          ),
+          const SizedBox(width: 12),
+          Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF1A1A1A))),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────
-// Filter Bottom Sheet
+// Filter Modal Content
 // ─────────────────────────────────────────────
+class _FilterModalContent extends StatefulWidget {
+  final String initialGender;
+  final List<String> initialMedis;
+  final List<String> initialKelas;
+  final List<String> availableKelas;
+  final void Function(String gender, List<String> medis, List<String> kelas) onApply;
 
-class _FilterBottomSheet extends StatefulWidget {
-  final FilterState filter;
-
-  const _FilterBottomSheet({required this.filter});
+  const _FilterModalContent({
+    required this.initialGender,
+    required this.initialMedis,
+    required this.initialKelas,
+    required this.availableKelas,
+    required this.onApply,
+  });
 
   @override
-  State<_FilterBottomSheet> createState() => _FilterBottomSheetState();
+  State<_FilterModalContent> createState() => _FilterModalContentState();
 }
 
-class _FilterBottomSheetState extends State<_FilterBottomSheet> {
-  late FilterState _tempFilter;
+class _FilterModalContentState extends State<_FilterModalContent> {
+  late String _selectedGender;
+  final List<String> _genders = ['Semua', 'Laki Laki', 'Perempuan'];
+
+  late List<String> _selectedMedis;
+  final List<String> _medisOptions = ['Semua kategori', 'Isolasi', 'Intensif', 'Reguler'];
+
+  late List<String> _selectedKelas;
+  late List<String> _kelasOptions;
 
   @override
   void initState() {
     super.initState();
-    _tempFilter = widget.filter;
+    _selectedGender = widget.initialGender;
+    _selectedMedis = List.from(widget.initialMedis);
+    _selectedKelas = List.from(widget.initialKelas);
+    _kelasOptions = ['Semua kelas', ...widget.availableKelas];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Filter',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
+  void _showResetDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Reset Filter', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
+        content: const Text('Apakah Anda ingin mereset semua filter?', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF6B7280))),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF2979FF)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
+                  child: const Text('Batal', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2979FF))),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Color(0xFF6B7280)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedGender = 'Semua';
+                      _selectedMedis = ['Semua kategori'];
+                      _selectedKelas = ['Semua kelas'];
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2979FF),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Reset', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
-              ],
-            ),
-          ),
-
-          const Divider(color: Color(0xFFF3F4F6)),
-
-          // Filter content
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Jenis Kelamin
-                  _buildFilterSection(
-                    title: 'Jenis Kelamin',
-                    subtitle: 'Pilih berdasarkan jenis kelamin pasien',
-                    options: ['Semua', 'Laki-laki', 'Perempuan'],
-                    selected: _tempFilter.jenisKelamin,
-                    onChanged: (v) => setState(
-                      () => _tempFilter.jenisKelamin = v,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Kategori Medis
-                  _buildFilterSection(
-                    title: 'Kategori Medis',
-                    subtitle:
-                        'Pilih sesuai satu, atau beberapa kategori medis',
-                    options: [
-                      'Semua kategori',
-                      'Isolasi',
-                      'Intensif',
-                      'Reguler',
-                    ],
-                    selected: _tempFilter.kategoriMedis,
-                    onChanged: (v) => setState(
-                      () => _tempFilter.kategoriMedis = v,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Kelas Ruangan
-                  _buildFilterSection(
-                    title: 'Kelas Ruangan',
-                    subtitle:
-                        'Pilih sesuai satu, atau beberapa kelas kapernya',
-                    options: [
-                      'Semua kelas',
-                      'Kelas I',
-                      'Kelas II',
-                      'Kelas III',
-                      'VIP',
-                      'VVIP',
-                    ],
-                    selected: _tempFilter.kelasRuangan,
-                    onChanged: (v) => setState(
-                      () => _tempFilter.kelasRuangan = v,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
               ),
-            ),
-          ),
-
-          // Action buttons
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade100),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setState(() => _tempFilter.reset());
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFE5E7EB)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text(
-                        'Reset',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        widget.filter.jenisKelamin =
-                            _tempFilter.jenisKelamin;
-                        widget.filter.kategoriMedis =
-                            _tempFilter.kategoriMedis;
-                        widget.filter.kelasRuangan =
-                            _tempFilter.kelasRuangan;
-                        Navigator.pop(context, true);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF43A047),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text(
-                        'Terapkan Filter',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterSection({
-    required String title,
-    required String subtitle,
-    required List<String> options,
-    required String selected,
-    required ValueChanged<String> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1A1A),
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 24), // balance
+                const Text(
+                  'Filter',
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 11,
-            color: Color(0xFF9CA3AF),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((option) {
-            final isSelected = selected == option;
-            return GestureDetector(
-              onTap: () => onChanged(option),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? const Color(0xFF43A047)
-                          : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color:
-                        isSelected
-                            ? const Color(0xFF43A047)
-                            : const Color(0xFFE5E7EB),
+          const Divider(),
+          
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Jenis Kelamin
+                  const Text('Jenis Kelamin', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                  const SizedBox(height: 4),
+                  const Text('Pilih jenis kelamin pasien', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: _genders.map((g) {
+                      final isSelected = g == _selectedGender;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedGender = g),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: isSelected ? const Color(0xFF2979FF) : const Color(0xFFD1D5DB)),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              g,
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: isSelected ? const Color(0xFF2979FF) : const Color(0xFF1A1A1A)),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
-                ),
-                child: Text(
-                  option,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                  const SizedBox(height: 24),
+
+                  // Kategori Medis
+                  const Text('Kategori Medis', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                  const SizedBox(height: 4),
+                  const Text('Pilih salah satu atau beberapa kategori medis', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  const SizedBox(height: 12),
+                  Column(
+                    children: _medisOptions.map((m) {
+                      final isSelected = _selectedMedis.contains(m);
+                      return Theme(
+                        data: ThemeData(unselectedWidgetColor: const Color(0xFFD1D5DB)),
+                        child: CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Text(m, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF1A1A1A))),
+                          value: isSelected,
+                          activeColor: const Color(0xFF2979FF),
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                if (m == 'Semua kategori') {
+                                  _selectedMedis = ['Semua kategori'];
+                                } else {
+                                  _selectedMedis.remove('Semua kategori');
+                                  _selectedMedis.add(m);
+                                }
+                              } else {
+                                _selectedMedis.remove(m);
+                                if (_selectedMedis.isEmpty) {
+                                  _selectedMedis = ['Semua kategori'];
+                                }
+                              }
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      );
+                    }).toList(),
                   ),
-                ),
+                  const SizedBox(height: 24),
+
+                  // Kelas Ruangan
+                  const Text('Kelas Ruangan', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                  const SizedBox(height: 4),
+                  const Text('Pilih salah satu atau beberapa kelas', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  const SizedBox(height: 12),
+                  Column(
+                    children: _kelasOptions.map((k) {
+                      final isSelected = _selectedKelas.contains(k);
+                      return Theme(
+                        data: ThemeData(unselectedWidgetColor: const Color(0xFFD1D5DB)),
+                        child: CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Text(k, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF1A1A1A))),
+                          value: isSelected,
+                          activeColor: const Color(0xFF2979FF),
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                if (k == 'Semua kelas') {
+                                  _selectedKelas = ['Semua kelas'];
+                                } else {
+                                  _selectedKelas.remove('Semua kelas');
+                                  _selectedKelas.add(k);
+                                }
+                              } else {
+                                _selectedKelas.remove(k);
+                                if (_selectedKelas.isEmpty) {
+                                  _selectedKelas = ['Semua kelas'];
+                                }
+                              }
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-            );
-          }).toList(),
-        ),
-      ],
+            ),
+          ),
+          
+          // Action Buttons
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _showResetDialog,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF2979FF)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Reset', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2979FF))),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      widget.onApply(_selectedGender, _selectedMedis, _selectedKelas);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2979FF),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Terapkan Filter', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 }
+

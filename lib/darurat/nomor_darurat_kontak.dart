@@ -6,6 +6,7 @@ import 'package:flutter_application_1/darurat/nomor_darurat_detail.dart';
 import 'package:flutter_application_1/darurat/services/emergency_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 Future<void> _handleCall(BuildContext context, String number, String name) async {
   showDialog(
@@ -62,10 +63,31 @@ class _NomorDaruratKontakPageState extends State<NomorDaruratKontakPage> {
   // Lokasi user saat ini (default)
   String _currentLocation = 'Mencari lokasi...';
 
+  late final WebViewController _mapController;
+
   @override
   void initState() {
     super.initState();
-    _otherRegions = ['Kota Malang', 'Kota Kediri', 'Kota Batu'];
+    _otherRegions = ['Kota Surabaya', 'Kota Kediri', 'Kota Batu'];
+    
+    _mapController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString('''
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { margin: 0; padding: 0; }
+            iframe { width: 100vw; height: 100vh; border: none; }
+          </style>
+        </head>
+        <body>
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126437.18173780588!2d112.55384463296448!3d-7.98220717407696!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd62822063dc2fb%3A0x78879446481a4da2!2sMalang%2C%20Malang%20City%2C%20East%20Java!5e0!3m2!1sen!2sid!4v1780952338613!5m2!1sen!2sid" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </body>
+        </html>
+      ''');
+
     _initLocation();
   }
 
@@ -73,7 +95,7 @@ class _NomorDaruratKontakPageState extends State<NomorDaruratKontakPage> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _fallbackToSurabaya();
+        _fallbackToMalang();
         return;
       }
 
@@ -81,13 +103,13 @@ class _NomorDaruratKontakPageState extends State<NomorDaruratKontakPage> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _fallbackToSurabaya();
+          _fallbackToMalang();
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _fallbackToSurabaya();
+        _fallbackToMalang();
         return;
       }
 
@@ -117,18 +139,18 @@ class _NomorDaruratKontakPageState extends State<NomorDaruratKontakPage> {
           _currentLocation = 'Kota $city';
         });
       } else {
-        _fallbackToSurabaya();
+        _fallbackToMalang();
       }
     } catch (e) {
-      _fallbackToSurabaya();
+      _fallbackToMalang();
     } finally {
       _fetchData();
     }
   }
 
-  void _fallbackToSurabaya() {
+  void _fallbackToMalang() {
     setState(() {
-      _currentLocation = 'Kota Surabaya';
+      _currentLocation = 'Kota Malang';
     });
   }
 
@@ -246,21 +268,16 @@ class _NomorDaruratKontakPageState extends State<NomorDaruratKontakPage> {
                     ),
                     child: Column(
                       children: [
-                        // Map placeholder
+                        // Google Maps WebView
                         Container(
-                          height: 120,
+                          height: 180,
                           width: double.infinity,
+                          clipBehavior: Clip.antiAlias,
                           decoration: const BoxDecoration(
                             color: Color(0xFFF3F4F6),
                             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                            image: DecorationImage(
-                              image: NetworkImage('https://maps.googleapis.com/maps/api/staticmap?center=Surabaya&zoom=12&size=600x300&maptype=roadmap&markers=color:red%7Clabel:S%7CSurabaya'),
-                              fit: BoxFit.cover,
-                            ),
                           ),
-                          child: const Center(
-                            child: Icon(Icons.location_on, color: Colors.red, size: 40),
-                          ),
+                          child: WebViewWidget(controller: _mapController),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(16),

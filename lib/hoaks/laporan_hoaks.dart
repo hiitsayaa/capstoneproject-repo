@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_application_1/hoaks/services/hoaks_service.dart';
+import 'lacak_tiket.dart';
 
 class LaporanHoaksPage extends StatefulWidget {
   const LaporanHoaksPage({super.key});
@@ -68,7 +70,7 @@ class _LaporanHoaksPageState extends State<LaporanHoaksPage> {
     );
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_captchaController.text.toUpperCase() != _captchaCode) {
@@ -85,16 +87,23 @@ class _LaporanHoaksPageState extends State<LaporanHoaksPage> {
 
     setState(() => _isSubmitting = true);
 
-    // Simulate submission
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
+    final deskripsi = _laporanController.text;
+    String judul = deskripsi.length > 50 ? '${deskripsi.substring(0, 50)}...' : deskripsi;
+    
+    String status = await HoaksService.reportHoax(
+      judulLaporan: judul,
+      deskripsiKejadian: deskripsi,
+      urlBukti: _linkController.text,
+    );
 
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (status == 'success') {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -102,58 +111,164 @@ class _LaporanHoaksPageState extends State<LaporanHoaksPage> {
                 width: 64,
                 height: 64,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFE8F5E9),
+                  color: Color(0xFF2979FF),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle,
-                    color: Color(0xFF43A047), size: 40),
+                child: const Icon(Icons.check, color: Colors.white, size: 40),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const Text(
-                'Laporan Terkirim!',
+                'Laporan Berhasil Dikirim',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               const Text(
-                'Terima kasih atas laporan Anda. Tim kami akan memverifikasi dalam 1x24 jam.',
+                'Terima kasih telah melaporkan informasi mencurigakan. Kami akan segera memproses laporanmu.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 13,
-                  color: Color(0xFF6B7280),
-                  height: 1.4,
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    Navigator.pop(context);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LacakTiketPage()),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2979FF),
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Kembali',
-                      style: TextStyle(
-                          fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                  child: const Text('Lacak Tiket Saya', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _formKey.currentState?.reset();
+                    _namaController.clear();
+                    _emailController.clear();
+                    _teleponController.clear();
+                    _laporanController.clear();
+                    _linkController.clear();
+                    _captchaController.clear();
+                    setState(() => _uploadedFileName = null);
+                    _generateCaptcha();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2979FF),
+                    side: const BorderSide(color: Color(0xFF2979FF)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Kirim Laporan Lainnya', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
           ),
         ),
       );
-    });
+    } else if (status == 'duplicate') {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2979FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.priority_high, color: Colors.white, size: 40),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Konten Ini Sudah Pernah Dilaporkan Sebagai Hoaks!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Laporan yang Anda kirimkan sudah teridentifikasi sebagai hoaks berdasarkan data kami',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _formKey.currentState?.reset();
+                    _namaController.clear();
+                    _emailController.clear();
+                    _teleponController.clear();
+                    _laporanController.clear();
+                    _linkController.clear();
+                    _captchaController.clear();
+                    setState(() => _uploadedFileName = null);
+                    _generateCaptcha();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2979FF),
+                    side: const BorderSide(color: Color(0xFF2979FF)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Kirim Laporan Lainnya', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      String errorMessage = 'Gagal mengirim laporan, silakan coba lagi';
+      if (status.startsWith('error:')) {
+        errorMessage = status;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage,
+              style: const TextStyle(fontFamily: 'Poppins')),
+          backgroundColor: const Color(0xFFE53935),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override

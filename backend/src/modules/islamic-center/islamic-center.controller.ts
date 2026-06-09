@@ -19,6 +19,7 @@ export class IslamicCenterController {
     return this.islamicCenterService.getFacility(id);
   }
 
+  @Public()
   @Post('bookings')
   createBooking(@Body() body: CreateIslamicCenterBookingDto) {
     return this.islamicCenterService.createBooking(body);

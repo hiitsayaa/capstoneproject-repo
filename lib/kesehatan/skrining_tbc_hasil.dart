@@ -45,12 +45,14 @@ final List<FaskesData> daftarFaskes = [
 // ─────────────────────────────────────────────
 
 class SkriningTbcHasilPage extends StatefulWidget {
+  final String? recordId;
   final bool terindikasi;
   final String namaLengkap;
   final DateTime waktuSkrining;
 
   const SkriningTbcHasilPage({
     super.key,
+    this.recordId,
     required this.terindikasi,
     required this.namaLengkap,
     required this.waktuSkrining,
@@ -113,6 +115,7 @@ class _SkriningTbcHasilPageState extends State<SkriningTbcHasilPage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => SkriningTbcDetailFaskesPage(
+                          recordId: widget.recordId,
                           faskes: faskes,
                           namaLengkap: widget.namaLengkap,
                         ),
@@ -276,7 +279,7 @@ class _SkriningTbcHasilPageState extends State<SkriningTbcHasilPage> {
                         prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF9CA3AF)),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF00897B))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2979FF))),
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -297,11 +300,11 @@ class _SkriningTbcHasilPageState extends State<SkriningTbcHasilPage> {
                           return GestureDetector(
                             onTap: () => setState(() => _selectedTipe = tipe),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFF00897B) : Colors.white,
+                                color: isSelected ? const Color(0xFF2979FF) : Colors.white,
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: isSelected ? const Color(0xFF00897B) : const Color(0xFFE5E7EB)),
+                                border: Border.all(color: isSelected ? const Color(0xFF2979FF) : const Color(0xFFE5E7EB)),
                               ),
                               child: Text(
                                 tipe,
@@ -358,13 +361,13 @@ class _SkriningTbcHasilPageState extends State<SkriningTbcHasilPage> {
                                 width: 28,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE0F2F1),
+                                  color: const Color(0xFFE3F2FD),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Center(
                                   child: Text(
                                     '${index + 1}',
-                                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),
+                                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2979FF)),
                                   ),
                                 ),
                               ),

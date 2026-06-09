@@ -1,15 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/kesehatan/skrining_tbc_hasil.dart';
 
-class SkriningTbcDetailFaskesPage extends StatelessWidget {
+import 'package:flutter_application_1/kesehatan/services/skrining_tbc_service.dart';
+import 'package:flutter_application_1/kesehatan/skrining_tbc_form.dart';
+
+class SkriningTbcDetailFaskesPage extends StatefulWidget {
+  final String? recordId;
   final FaskesData faskes;
   final String namaLengkap;
 
   const SkriningTbcDetailFaskesPage({
     super.key,
+    this.recordId,
     required this.faskes,
     required this.namaLengkap,
   });
+
+  @override
+  State<SkriningTbcDetailFaskesPage> createState() => _SkriningTbcDetailFaskesPageState();
+}
+
+class _SkriningTbcDetailFaskesPageState extends State<SkriningTbcDetailFaskesPage> {
+  bool _isLoading = false;
+
+  void _pilihFaskes() async {
+    if (widget.recordId == null) {
+      // If there's no recordId (for some reason), just navigate back
+      _goToLanding();
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final success = await SkriningTbcService.updateFaskes(widget.recordId!, widget.faskes.nama);
+    setState(() => _isLoading = false);
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Berhasil memilih faskes!'),
+          backgroundColor: Color(0xFF43A047),
+        ),
+      );
+      _goToLanding();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memilih faskes.')),
+      );
+    }
+  }
+
+  void _goToLanding() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const SkriningTbcFormPage()),
+      (route) => route.isFirst,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +119,7 @@ class SkriningTbcDetailFaskesPage extends StatelessWidget {
 
                   // Greeting
                   Text(
-                    'Hai $namaLengkap,',
+                    'Hai ${widget.namaLengkap},',
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
@@ -143,7 +189,7 @@ class SkriningTbcDetailFaskesPage extends StatelessWidget {
                     icon: Icons.local_hospital_outlined,
                     iconColor: const Color(0xFF00897B),
                     title: 'Nama Faskes',
-                    value: faskes.nama,
+                    value: widget.faskes.nama,
                   ),
                   const SizedBox(height: 16),
 
@@ -152,7 +198,7 @@ class SkriningTbcDetailFaskesPage extends StatelessWidget {
                     icon: Icons.location_on_outlined,
                     iconColor: const Color(0xFFEF4444),
                     title: 'Alamat',
-                    value: faskes.alamat,
+                    value: widget.faskes.alamat,
                   ),
                   const SizedBox(height: 16),
 
@@ -161,7 +207,7 @@ class SkriningTbcDetailFaskesPage extends StatelessWidget {
                     icon: Icons.phone_outlined,
                     iconColor: const Color(0xFF2979FF),
                     title: 'Nomor Telepon',
-                    value: faskes.telepon,
+                    value: widget.faskes.telepon,
                   ),
                 ],
               ),
@@ -227,8 +273,40 @@ class SkriningTbcDetailFaskesPage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 100),
           ],
+        ),
+      ),
+      bottomSheet: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _pilihFaskes,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2979FF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: _isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text(
+                    'Pilih Faskes',
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+            ),
+          ),
         ),
       ),
     );

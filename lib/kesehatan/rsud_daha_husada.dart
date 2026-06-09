@@ -65,12 +65,12 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
                   Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
                         // RSUD Daha Husada Logo
-                        Image.asset('assets/logo_rsud_daha.png', height: 80),
-                        const SizedBox(height: 16),
+                        Center(child: Image.asset('assets/logo_rsud_karsa.png', height: 120),),
+                        const SizedBox(height: 24),
                         Text(
                           _hospitalData?['name'] ?? 'RSUD Daha Husada',
                           style: const TextStyle(
@@ -79,53 +79,25 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1A1A1A),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.location_on, size: 14, color: Color(0xFF6B7280)),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                _hospitalData?['address'] ?? 'Jl. Veteran No.48, Mojoroto, Kediri',
-                                style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.phone, size: 14, color: Color(0xFF6B7280)),
-                            const SizedBox(width: 4),
-                            Text(
-                              _hospitalData?['phone'] ?? '(0354) 777088',
-                              style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
-                            ),
-                          ],
+                          textAlign: TextAlign.left,
                         ),
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
-                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFF2979FF)),
                           ),
                           child: const Text(
-                            'Buka 24 Jam',
-                            style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF388E3C)),
+                            'Rumah Sakit Umum Daerah Daha Husada',
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2979FF)),
                           ),
                         ),
                         const SizedBox(height: 16),
                         // Description
                         Text(
-                          _hospitalData?['description'] ?? 'Penyedia layanan kesehatan unggulan yang menghadirkan perawatan medis profesional.',
+                          _hospitalData?['description'] ?? 'Penyedia layanan kesehatan unggulan dari Pemprov Jatim yang menghadirkan perawatan medis profesional, bermutu, dan terjangkau bagi seluruh lapisan masyarakat.',
                           textAlign: TextAlign.left,
                           style: const TextStyle(
                             fontFamily: 'Poppins',
@@ -139,15 +111,21 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
                   ),
 
             // Tab Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildTabItem(0, 'Layanan'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(1, 'Operasional'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(2, 'Ketentuan Umum'),
+            DefaultTabController(
+              length: 3,
+              initialIndex: _selectedTabIndex,
+              child: TabBar(
+                onTap: (index) => setState(() => _selectedTabIndex = index),
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+                labelPadding: EdgeInsets.zero,
+                labelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 12),
+                tabs: const [
+                  Tab(text: 'Layanan'),
+                  Tab(text: 'Operasional'),
+                  Tab(text: 'Ketentuan Umum'),
                 ],
               ),
             ),
@@ -166,32 +144,7 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
     );
   }
 
-  Widget _buildTabItem(int index, String title) {
-    final isSelected = _selectedTabIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTabIndex = index),
-      child: Container(
-        padding: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildTabContent() {
     switch (_selectedTabIndex) {
@@ -466,63 +419,6 @@ class _RsudDahaHusadaPageState extends State<RsudDahaHusadaPage> {
                           const SizedBox(width: 10),
                           _buildSocialIcon(Icons.play_arrow, const Color(0xFFFF0000)),
                         ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Aplikasi
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.grid_view, color: Color(0xFF2979FF), size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Aplikasi', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 36,
-                        width: 110,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.play_arrow, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('GET IT ON', style: TextStyle(color: Colors.white, fontSize: 6)),
-                                Text('Google Play', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/islamic_center/islamic_center_list.dart';
 import 'package:flutter_application_1/islamic_center/islamic_center_detail.dart';
+import 'package:flutter_application_1/islamic_center/services/islamic_center_service.dart';
 
 class IslamicCenterBookingPage extends StatefulWidget {
   const IslamicCenterBookingPage({super.key});
@@ -13,7 +14,10 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _paxController = TextEditingController();
   String _selectedFasilitas = 'Aula';
+  String _displayedFasilitas = 'Aula';
   bool _hasSearched = false;
+  bool _isLoading = false;
+  List<dynamic> _searchResults = [];
 
   void _showDatePicker() async {
     final DateTime? picked = await showDatePicker(
@@ -32,6 +36,21 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
   String _getMonthName(int month) {
     const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     return months[month - 1];
+  }
+
+  Future<void> _performSearch() async {
+    setState(() {
+      _isLoading = true;
+      _hasSearched = true;
+      _displayedFasilitas = _selectedFasilitas;
+    });
+
+    final data = await IslamicCenterService.getFacilities(category: _selectedFasilitas);
+    
+    setState(() {
+      _searchResults = data;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -54,16 +73,16 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
             const Text('Kategori Fasilitas', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildCategoryButton(Icons.business, 'Aula', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterListPage(category: 'Aula')));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => IslamicCenterListPage(category: 'Aula', pax: _paxController.text)));
                 }),
                 _buildCategoryButton(Icons.apartment, 'Asrama', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterListPage(category: 'Asrama')));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => IslamicCenterListPage(category: 'Asrama', pax: _paxController.text)));
                 }),
                 _buildCategoryButton(Icons.mosque, 'Masjid', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterListPage(category: 'Masjid')));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => IslamicCenterListPage(category: 'Masjid', pax: _paxController.text)));
                 }),
               ],
             ),
@@ -123,6 +142,8 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
                             onChanged: (newValue) {
                               setState(() {
                                 _selectedFasilitas = newValue!;
+                                // Don't trigger search automatically as requested by user
+                                _hasSearched = false;
                               });
                             },
                           ),
@@ -153,27 +174,41 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _hasSearched = true;
-                  });
-                },
+                onPressed: _performSearch,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2979FF),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
                 ),
-                child: const Text('Cek Ketersediaan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: _isLoading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Cek Ketersediaan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
             if (_hasSearched) ...[
               const SizedBox(height: 32),
               const Text('Hasil Pencarian', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              _buildFacilityCard('Hall Utama', 'Tersedia', '2.000 Orang', 'Rp10.000.000'),
-              const SizedBox(height: 16),
-              _buildFacilityCard('Ruang Rapat', 'Tersedia', '150 Orang', 'Rp2.000.000'),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (_searchResults.isEmpty)
+                const Center(child: Text('Fasilitas tidak ditemukan', style: TextStyle(fontFamily: 'Poppins', color: Colors.grey)))
+              else
+                ..._searchResults.map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildFacilityCard(
+                      item['id'] ?? '',
+                      item['name'] ?? '',
+                      item['available'] == true ? 'Tersedia' : 'Penuh',
+                      '${item['capacity']} Orang',
+                      item['price_label'] ?? '-',
+                      item['category'] ?? _displayedFasilitas,
+                      item['image_url'] ?? '',
+                    ),
+                  );
+                }),
             ]
           ],
         ),
@@ -201,30 +236,46 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
     );
   }
 
-  Widget _buildFacilityCard(String title, String status, String capacity, String price) {
+  Widget _buildFacilityCard(String id, String title, String status, String capacity, String price, String category, String imageUrl) {
     bool isAvailable = status == 'Tersedia';
+    
+    // Fallback dummy image if null or majadigi (unreachable)
+    if (imageUrl.isEmpty || imageUrl.contains('majadigi.go.id')) {
+      if (category == 'Asrama') {
+        imageUrl = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400';
+      } else if (category == 'Masjid') {
+        imageUrl = 'https://images.unsplash.com/photo-1564683214965-3619addd900d?auto=format&fit=crop&q=80&w=400';
+      } else {
+        imageUrl = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=400';
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image placeholder
-          Container(
-            width: 120, height: 130,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE0E0E0),
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 120, // Match height of card roughly
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
+                image: DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-            child: const Icon(Icons.image, color: Colors.grey, size: 40),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -236,7 +287,7 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
                           border: Border.all(color: const Color(0xFF2979FF)),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(_selectedFasilitas, style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF2979FF), fontWeight: FontWeight.w600)),
+                        child: Text(category, style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF2979FF), fontWeight: FontWeight.w600)),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -249,7 +300,7 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(title, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(title, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -261,12 +312,14 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
                           const Text('Kapasitas', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Colors.grey)),
                         ],
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(price, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600)),
-                          const Text('Estimasi Harga', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Colors.grey)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(price, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            const Text('Estimasi Harga', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Colors.grey)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -276,7 +329,15 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
                     height: 32,
                     child: OutlinedButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterDetailPage()));
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => IslamicCenterDetailPage(
+                          id: id,
+                          title: title,
+                          category: category,
+                          imageUrl: imageUrl,
+                          capacity: capacity,
+                          price: price,
+                          pax: _paxController.text, // Pass Pax!
+                        )));
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF2979FF)),
@@ -290,6 +351,7 @@ class _IslamicCenterBookingPageState extends State<IslamicCenterBookingPage> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

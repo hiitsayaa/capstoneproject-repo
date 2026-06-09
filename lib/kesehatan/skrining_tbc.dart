@@ -41,11 +41,11 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
                   // E-TIBI Logo
-                  Image.asset('assets/logo_etibi.png', height: 80),
+                  Center(child: Image.asset('assets/logo_etibi.png', height: 80),),
                   const SizedBox(height: 20),
 
                   // Title
@@ -69,7 +69,7 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF00897B)),
+                      border: Border.all(color: const Color(0xFF2979FF)),
                     ),
                     child: const Text(
                       'Dinas Kesehatan',
@@ -77,7 +77,7 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                         fontFamily: 'Poppins',
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF00897B),
+                        color: Color(0xFF2979FF),
                       ),
                     ),
                   ),
@@ -99,15 +99,21 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
             ),
 
             // Tab Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildTabItem(0, 'Layanan'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(1, 'Operasional'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(2, 'Ketentuan Umum'),
+            DefaultTabController(
+              length: 3,
+              initialIndex: _selectedTabIndex,
+              child: TabBar(
+                onTap: (index) => setState(() => _selectedTabIndex = index),
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+                labelPadding: EdgeInsets.zero,
+                labelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 12),
+                tabs: const [
+                  Tab(text: 'Layanan'),
+                  Tab(text: 'Operasional'),
+                  Tab(text: 'Ketentuan Umum'),
                 ],
               ),
             ),
@@ -121,33 +127,6 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
 
             const SizedBox(height: 32),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabItem(int index, String title) {
-    final isSelected = _selectedTabIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTabIndex = index),
-      child: Container(
-        padding: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
-          ),
         ),
       ),
     );
@@ -196,10 +175,10 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE0F2F1),
+                      color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.assignment_outlined, color: Color(0xFF00897B), size: 24),
+                    child: const Icon(Icons.assignment_outlined, color: Color(0xFF2979FF), size: 24),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -273,10 +252,10 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2F1),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.location_on_outlined, color: Color(0xFF00897B), size: 20),
+                  child: const Icon(Icons.location_on_outlined, color: Color(0xFF2979FF), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -296,14 +275,14 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                       OutlinedButton(
                         onPressed: () {},
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF00897B)),
+                          side: const BorderSide(color: Color(0xFF2979FF)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                           minimumSize: const Size(0, 32),
                         ),
                         child: const Text(
                           'Lihat di maps',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF00897B), fontWeight: FontWeight.w500),
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF2979FF), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],
@@ -329,10 +308,10 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2F1),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.access_time, color: Color(0xFF00897B), size: 20),
+                  child: const Icon(Icons.access_time, color: Color(0xFF2979FF), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -370,10 +349,10 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2F1),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.share_outlined, color: Color(0xFF00897B), size: 20),
+                  child: const Icon(Icons.share_outlined, color: Color(0xFF2979FF), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -416,10 +395,10 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFE0F2F1),
+              color: const Color(0xFFE3F2FD),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF00897B), size: 20),
+            child: Icon(icon, color: const Color(0xFF2979FF), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -443,7 +422,7 @@ class _SkriningTbcPageState extends State<SkriningTbcPage> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFF00897B), shape: BoxShape.circle)),
+          Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle)),
           const SizedBox(width: 8),
           SizedBox(width: 60, child: Text(hari, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)))),
           Text(jam, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
@@ -523,7 +502,7 @@ class _EtibiExpandableCardState extends State<_EtibiExpandableCard> {
         color: _isExpanded ? const Color(0xFFF9FAFB) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _isExpanded ? const Color(0xFF00897B) : const Color(0xFFE5E7EB),
+          color: _isExpanded ? const Color(0xFF2979FF) : const Color(0xFFE5E7EB),
         ),
       ),
       child: Column(

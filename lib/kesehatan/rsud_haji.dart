@@ -41,35 +41,35 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
                   // RSUD Haji Logo
-                  Image.asset('assets/logo_rsud_haji.png', height: 100),
-                  const SizedBox(height: 16),
+                  Center(child: Image.asset('assets/logo_rsud_haji.png', height: 120),),
+                  const SizedBox(height: 24),
 
                   // Title
                   const Text(
                     'RSUD Haji Prov. Jatim',
                     style: TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1A1A1A),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                      horizontal: 12,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF43A047)),
+                      border: Border.all(color: const Color(0xFF2979FF)),
                     ),
                     child: const Text(
                       'Rumah Sakit Umum Daerah Haji Provinsi Jawa Timur',
@@ -77,7 +77,7 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                         fontFamily: 'Poppins',
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF43A047),
+                        color: Color(0xFF2979FF),
                       ),
                     ),
                   ),
@@ -99,15 +99,21 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
             ),
 
             // Tab Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildTabItem(0, 'Layanan'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(1, 'Operasional'),
-                  const SizedBox(width: 24),
-                  _buildTabItem(2, 'Ketentuan Umum'),
+            DefaultTabController(
+              length: 3,
+              initialIndex: _selectedTabIndex,
+              child: TabBar(
+                onTap: (index) => setState(() => _selectedTabIndex = index),
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+                labelPadding: EdgeInsets.zero,
+                labelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 12),
+                tabs: const [
+                  Tab(text: 'Layanan'),
+                  Tab(text: 'Operasional'),
+                  Tab(text: 'Ketentuan Umum'),
                 ],
               ),
             ),
@@ -121,37 +127,6 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
 
             const SizedBox(height: 32),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabItem(int index, String title) {
-    final isSelected = _selectedTabIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTabIndex = index),
-      child: Container(
-        padding: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color:
-                  isSelected ? const Color(0xFF1A1A1A) : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color:
-                isSelected
-                    ? const Color(0xFF1A1A1A)
-                    : const Color(0xFF6B7280),
-          ),
         ),
       ),
     );
@@ -181,8 +156,8 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
         children: [
           _buildLayananItem(
             icon: Icons.bed_outlined,
-            iconBgColor: const Color(0xFFE8F5E9),
-            iconColor: const Color(0xFF43A047),
+            iconBgColor: const Color(0xFFF3F4F6),
+            iconColor: const Color(0xFF1A1A1A),
             title: 'Info Kamar RSUD Haji',
             description:
                 'Lihat informasi ketersediaan kamar rawat inap',
@@ -288,12 +263,12 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.language,
-                    color: Color(0xFF43A047),
+                    color: Color(0xFF2979FF),
                     size: 20,
                   ),
                 ),
@@ -348,12 +323,12 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.location_on_outlined,
-                    color: Color(0xFF43A047),
+                    color: Color(0xFF2979FF),
                     size: 20,
                   ),
                 ),
@@ -385,7 +360,7 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                       OutlinedButton(
                         onPressed: () {},
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF43A047)),
+                          side: const BorderSide(color: Color(0xFF2979FF)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -400,7 +375,7 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 11,
-                            color: Color(0xFF43A047),
+                            color: Color(0xFF2979FF),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -428,12 +403,12 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.access_time,
-                    color: Color(0xFF43A047),
+                    color: Color(0xFF2979FF),
                     size: 20,
                   ),
                 ),
@@ -481,12 +456,12 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.share_outlined,
-                    color: Color(0xFF43A047),
+                    color: Color(0xFF2979FF),
                     size: 20,
                   ),
                 ),
@@ -534,82 +509,6 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Aplikasi
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.apps,
-                    color: Color(0xFF43A047),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Aplikasi',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.play_arrow,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              'Google Play',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -624,7 +523,7 @@ class _RsudHajiPageState extends State<RsudHajiPage> {
             width: 4,
             height: 4,
             decoration: const BoxDecoration(
-              color: Color(0xFF43A047),
+              color: Color(0xFF2979FF),
               shape: BoxShape.circle,
             ),
           ),
@@ -734,7 +633,7 @@ class _RsudHajiExpandableCardState extends State<_RsudHajiExpandableCard> {
         border: Border.all(
           color:
               _isExpanded
-                  ? const Color(0xFF43A047)
+                  ? const Color(0xFF2979FF)
                   : const Color(0xFFE5E7EB),
         ),
       ),

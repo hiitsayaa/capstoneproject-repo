@@ -42,71 +42,7 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
     return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
   }
 
-  void _showDetailPopup(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Detail Informasi Kendaraan',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(child: _buildInfoPair('Merk', _vehicleData?['merk'] ?? '-')),
-                    Expanded(child: _buildInfoPair('Nomor Rangka', _vehicleData?['no_rangka'] ?? '-')),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildInfoPair('No. Polisi', _vehicleData?['nopol'] ?? '-')),
-                    Expanded(child: _buildInfoPair('Nomor Mesin', _vehicleData?['no_mesin'] ?? '-')),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildInfoPair('Tahun Pembuatan', _vehicleData?['tahun']?.toString() ?? '-')),
-                    Expanded(child: _buildInfoPair('Warna', 'BLACK')),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2979FF),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Tutup', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -167,29 +103,17 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _buildInfoPair('Tgl. Jatuh Tempo', _latestBill?['due_date'] ?? '-'),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: (_latestBill?['status'] == 'Paid') ? const Color(0xFF43A047) : const Color(0xFFE53935), borderRadius: BorderRadius.circular(20)),
-                        child: Text(_latestBill?['status'] == 'Paid' ? 'Sudah dibayar' : 'Belum dibayar', style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
-                      ),
+                      Expanded(child: _buildInfoPair('Tgl. Jatuh Tempo', _latestBill?['due_date'] ?? '-')),
+                      Expanded(child: _buildInfoPair('Tahun Pembuatan', _vehicleData!['tahun']?.toString() ?? '-')),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const Divider(height: 1, color: Color(0xFFE5E7EB)),
                   const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () => _showDetailPopup(context),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('Lihat Detail', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
-                        Icon(Icons.chevron_right, size: 20, color: Color(0xFF2979FF)),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      Expanded(child: _buildInfoPair('Nomor Rangka', _vehicleData!['no_rangka'] ?? '-')),
+                      Expanded(child: _buildInfoPair('Nomor Mesin', _vehicleData!['no_mesin'] ?? '-')),
+                    ],
                   ),
                 ],
               ),
@@ -206,30 +130,26 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Informasi Biaya', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
-                      GestureDetector(
-                        onTap: () {},
-                        child: const Row(
-                          children: [
-                            Text('Detail', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF2979FF))),
-                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF2979FF)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  const Text('Informasi Biaya', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
+                  _buildCostRow('PKB Pokok', _formatCurrency(_latestBill?['pokok_pkb'] ?? 0)),
+                  _buildCostRow('PKB Denda', _formatCurrency(_latestBill?['denda_pkb'] ?? 0)),
+                  _buildCostRow('SWDKLLJ Pokok', _formatCurrency(_latestBill?['swdkllj'] ?? 0)),
+                  _buildCostRow('SWDKLLJ Denda', _formatCurrency(_latestBill?['denda_swdkllj'] ?? 0)),
+                  _buildCostRow('PNPB STNK', '0'),
+                  _buildCostRow('PNPB TNKB', '0'),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                      const Text('Total', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold)),
                       Row(
                         children: [
-                          const Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                          const Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
                           Text(_latestBill != null ? _formatCurrency(_latestBill!['total'] ?? 0) : '0', style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -290,6 +210,27 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCostRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+          Row(
+            children: [
+              const Text('Rp. ', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280))),
+              SizedBox(
+                width: 75,
+                child: Text(value, textAlign: TextAlign.right, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

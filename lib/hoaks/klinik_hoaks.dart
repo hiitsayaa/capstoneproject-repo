@@ -53,48 +53,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
             const SizedBox(height: 24),
 
             // Logo Jawa Timur
-            Center(
-              child: Container(
-                width: 120,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/logolayanan1.png',
-                      width: 100,
-                      height: 120,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => Container(
-                        width: 100,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.account_balance,
-                                size: 48, color: Colors.blue.shade700),
-                            const SizedBox(height: 4),
-                            Text('Jawa Timur',
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 9,
-                                    color: Colors.grey.shade600)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            Center(child: Image.asset('assets/logolayanan1.png', height: 120)),
             const SizedBox(height: 20),
 
             // Klinik Hoaks Title
@@ -121,7 +80,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF43A047), width: 1),
+                  border: Border.all(color: const Color(0xFF2979FF), width: 1),
                 ),
                 child: const Text(
                   'Dinas Komunikasi & Informatika',
@@ -129,7 +88,7 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
                     fontFamily: 'Poppins',
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF43A047),
+                    color: Color(0xFF2979FF),
                   ),
                 ),
               ),
@@ -160,21 +119,21 @@ class _KlinikHoaksPageState extends State<KlinikHoaksPage>
               ),
               child: TabBar(
                 controller: _tabController,
-                labelColor: const Color(0xFF1A1A1A),
-                unselectedLabelColor: const Color(0xFF9CA3AF),
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
                 labelStyle: const TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
                 unselectedLabelStyle: const TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
-                indicatorColor: const Color(0xFF2979FF),
-                indicatorWeight: 2.5,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                indicatorColor: Colors.black,
+                indicatorWeight: 2.0,
+                labelPadding: EdgeInsets.zero,
                 tabs: const [
                   Tab(text: 'Layanan'),
                   Tab(text: 'Operasional'),

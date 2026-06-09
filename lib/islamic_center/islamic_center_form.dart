@@ -1,7 +1,26 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/islamic_center/services/islamic_center_service.dart';
+import 'package:flutter_application_1/auth/services/auth_service.dart';
+import 'package:intl/intl.dart';
 
 class IslamicCenterFormPage extends StatefulWidget {
-  const IslamicCenterFormPage({super.key});
+  final String id;
+  final String title;
+  final String category;
+  final String imageUrl;
+  final String price;
+  final String pax;
+
+  const IslamicCenterFormPage({
+    super.key,
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.imageUrl,
+    required this.price,
+    required this.pax,
+  });
 
   @override
   State<IslamicCenterFormPage> createState() => _IslamicCenterFormPageState();
@@ -14,7 +33,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dateController = TextEditingController();
-  final _paxController = TextEditingController();
+  late TextEditingController _paxController;
   String _waktu = 'Siang';
   
   bool _karpet = false;
@@ -23,6 +42,95 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
   // Step 3 state
   String? _paymentMethod;
   bool _showPaymentInstruction = false;
+  bool _isCreatingBooking = false;
+  Map<String, dynamic>? _bookingResult;
+
+  int _basePrice = 0;
+  Timer? _timer;
+  Duration _remainingTime = const Duration(hours: 24);
+
+  void _startTimer() {
+    _timer?.cancel();
+    _remainingTime = const Duration(hours: 24);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingTime.inSeconds > 0) {
+        setState(() {
+          _remainingTime -= const Duration(seconds: 1);
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _paxController = TextEditingController(text: widget.pax);
+    _parseBasePrice();
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() async {
+    final profile = await AuthService().getFullProfile();
+    if (profile != null && mounted) {
+      setState(() {
+        if (_nameController.text.isEmpty) {
+          _nameController.text = profile['nama_lengkap'] ?? '';
+        }
+        if (_phoneController.text.isEmpty) {
+          _phoneController.text = profile['telepon'] ?? '';
+        }
+      });
+    }
+  }
+
+  void _parseBasePrice() {
+    if (widget.price.toLowerCase().contains('gratis')) {
+      _basePrice = 0;
+    } else {
+      String clean = widget.price.replaceAll(RegExp(r'[^0-9]'), '');
+      if (clean.isNotEmpty) {
+        _basePrice = int.parse(clean);
+      }
+    }
+  }
+
+  String _formatCurrency(int amount) {
+    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    return format.format(amount);
+  }
+
+  DateTime? _selectedDate;
+
+  void _showDatePicker() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        _dateController.text = "${picked.day} ${months[picked.month - 1]} ${picked.year}";
+      });
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    final hours = d.inHours.toString().padLeft(2, '0');
+    final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,21 +248,19 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
         const SizedBox(height: 24),
         const Text('Detail Acara', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _buildTextField('Pilih Tanggal Acara', 'Pilih tanggal acara', _dateController, icon: Icons.calendar_today),
+        _buildTextField('Pilih Tanggal Acara', 'Masukkan tanggal acara', _dateController, icon: Icons.calendar_today, readOnly: true, onTap: _showDatePicker),
         const SizedBox(height: 12),
         _buildTextField('Jumlah Tamu', 'Masukkan perkiraan jumlah tamu', _paxController),
         const SizedBox(height: 16),
         const Text('Waktu', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
         Row(
           children: [
-            // ignore: deprecated_member_use
             Radio(value: 'Siang', groupValue: _waktu, onChanged: (v) => setState(() => _waktu = v.toString())),
             const Text('Siang (08.00 - 15.00)', style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
           ],
         ),
         Row(
           children: [
-            // ignore: deprecated_member_use
             Radio(value: 'Malam', groupValue: _waktu, onChanged: (v) => setState(() => _waktu = v.toString())),
             const Text('Malam (18.00 - 22.00)', style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
           ],
@@ -170,7 +276,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Total Estimasi', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold)),
-            Text('Rp${_calculateTotal()}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+            Text(_formatCurrency(_calculateTotal()), style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
           ],
         ),
       ],
@@ -207,17 +313,17 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
           ),
           child: Column(
             children: [
-              _buildCostRow('Harga Sewa Gedung', 'Rp10.000.000'),
-              _buildCostRow('Fasilitas Tambahan', 'Rp${_getTambahanCost()}'),
+              _buildCostRow('Harga Sewa Gedung', _formatCurrency(_basePrice)),
+              _buildCostRow('Fasilitas Tambahan', _formatCurrency(_getTambahanCost())),
               const Divider(height: 24),
-              _buildCostRow('Subtotal', 'Rp${_getSubtotal()}'),
-              _buildCostRow('Pajak & Layanan (11%)', 'Rp${_getTax()}'),
+              _buildCostRow('Subtotal', _formatCurrency(_getSubtotal())),
+              _buildCostRow('Pajak & Layanan (11%)', _formatCurrency(_getTax())),
               const Divider(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold)),
-                  Text('Rp${_calculateTotal()}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(_formatCurrency(_calculateTotal()), style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -258,17 +364,17 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Sabtu, 25-04-2025', style: TextStyle(fontFamily: 'Poppins', fontSize: 11)),
-                        Text('20.00 WIB', style: TextStyle(fontFamily: 'Poppins', fontSize: 11)),
+                        Text('Besok', style: TextStyle(fontFamily: 'Poppins', fontSize: 11)),
+                        Text('23.59 WIB', style: TextStyle(fontFamily: 'Poppins', fontSize: 11)),
                       ],
                     ),
-                    Text('00:42:56', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    Text(_formatDuration(_remainingTime), style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue)),
                   ],
                 ),
               ),
@@ -297,7 +403,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Nominal Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
-                  Text('Rp${_calculateTotal()}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(_formatCurrency(_calculateTotal()), style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 20),
@@ -329,14 +435,14 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
           decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
           child: Column(
             children: [
-              _buildCostRow('No. Pesanan', 'AULA-25042025123'),
-              _buildCostRow('Ruangan', 'Aula - Hall Utama'),
+              _buildCostRow('No. Pesanan', _bookingResult?['id'] ?? 'IC-123456789'),
+              _buildCostRow('Ruangan', '${widget.category} - ${widget.title}'),
               _buildCostRow('Tanggal', _dateController.text.isEmpty ? '12 Juni 2025' : _dateController.text),
-              _buildCostRow('Jumlah Tamu', _paxController.text.isEmpty ? '1800 Orang' : '${_paxController.text} Orang'),
+              _buildCostRow('Jumlah Tamu', _paxController.text.isEmpty ? '0 Orang' : '${_paxController.text} Orang'),
               _buildCostRow('Waktu', _waktu == 'Siang' ? 'Siang (08.00 - 15.00)' : 'Malam (18.00 - 22.00)'),
               _buildCostRow('Metode Pembayaran', _paymentMethod ?? 'QRIS'),
               const Divider(height: 24),
-              _buildCostRow('Total Pembayaran', 'Rp${_calculateTotal()}'),
+              _buildCostRow('Total Pembayaran', _formatCurrency(_calculateTotal())),
             ],
           ),
         ),
@@ -367,13 +473,56 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
     );
   }
 
+  Future<void> _handlePayment() async {
+    setState(() => _isCreatingBooking = true);
+    
+    // Create booking in database
+    List<String> catatanTambahan = [];
+    if (_karpet) catatanTambahan.add('Karpet');
+    if (_meja) catatanTambahan.add('Meja & Kursi');
+
+    String formatTanggal(DateTime? d) {
+      if (d == null) return '2025-06-12';
+      return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    }
+
+    final result = await IslamicCenterService.createBooking(
+      facilityId: widget.id,
+      namaPemohon: _nameController.text.isEmpty ? 'Ahmad Putra' : _nameController.text,
+      telepon: _phoneController.text.isEmpty ? '081234567890' : _phoneController.text,
+      email: 'user@example.com',
+      tanggal: formatTanggal(_selectedDate),
+      waktu: _waktu,
+      catatan: catatanTambahan.isNotEmpty ? 'Fasilitas: ${catatanTambahan.join(', ')}' : null,
+    );
+
+    setState(() {
+      _isCreatingBooking = false;
+      _currentStep = 4;
+      if (result != null) {
+        _bookingResult = result;
+      } else {
+        // Fallback agar no pesanan tidak bergerak jika server error
+        _bookingResult = {
+          'id': 'INV-${DateTime.now().millisecondsSinceEpoch}',
+        };
+      }
+    });
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal menyimpan ke database, tapi simulasi sukses.')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('Berhasil Menyimpan')));
+    }
+  }
+
   Widget? _buildBottomBar() {
     if (_currentStep == 4) return null;
 
     if (_currentStep == 3 && _showPaymentInstruction) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -381,9 +530,11 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => setState(() => _currentStep = 4),
+                  onPressed: _isCreatingBooking ? null : _handlePayment,
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2979FF), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Saya Sudah Membayar', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: _isCreatingBooking 
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Saya Sudah Membayar', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -402,7 +553,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
       child: SafeArea(
         child: SizedBox(
           width: double.infinity,
@@ -415,6 +566,7 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
               } else if (_currentStep == 3) {
                 if (_paymentMethod != null) {
                   setState(() => _showPaymentInstruction = true);
+                  _startTimer();
                 }
               }
             },
@@ -434,6 +586,17 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
   }
 
   Widget _buildRoomInfoCard() {
+    String finalImage = widget.imageUrl;
+    if (finalImage.isEmpty || finalImage.contains('majadigi.go.id')) {
+      if (widget.category == 'Asrama') {
+        finalImage = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400';
+      } else if (widget.category == 'Masjid') {
+        finalImage = 'https://images.unsplash.com/photo-1564683214965-3619addd900d?auto=format&fit=crop&q=80&w=400';
+      } else {
+        finalImage = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=400';
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -441,26 +604,36 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 80, height: 60,
-            decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.image, color: Colors.grey),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200, 
+              borderRadius: BorderRadius.circular(8),
+              image: DecorationImage(
+                image: NetworkImage(finalImage),
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Hall Utama', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
-              Text('Aula', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(widget.title, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(widget.category, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
+              ],
+            ),
           )
         ],
       ),
     );
   }
 
-  Widget _buildTextField(String label, String hint, TextEditingController controller, {IconData? icon}) {
+  Widget _buildTextField(String label, String hint, TextEditingController controller, {IconData? icon, bool readOnly = false, VoidCallback? onTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -468,6 +641,8 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          readOnly: readOnly,
+          onTap: onTap,
           style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
           decoration: InputDecoration(
             hintText: hint,
@@ -520,7 +695,14 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.black87)),
-          Text(value, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value, 
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
@@ -554,24 +736,16 @@ class _IslamicCenterFormPageState extends State<IslamicCenterFormPage> {
     return cost;
   }
 
-  String _getSubtotal() {
-    return '1${_getTambahanCost() == 1100000 ? "1.100.000" : _getTambahanCost() == 600000 ? "0.600.000" : _getTambahanCost() == 500000 ? "0.500.000" : "0.000.000"}';
+  int _getSubtotal() {
+    return _basePrice + _getTambahanCost();
   }
 
-  String _getTax() {
-    int subtotal = 10000000 + _getTambahanCost();
-    int tax = (subtotal * 0.11).round();
-    String t = tax.toString();
-    if (t.length > 6) return '${t.substring(0, 1)}.${t.substring(1, 4)}.${t.substring(4)}';
-    return '${t.substring(0, 3)}.${t.substring(3)}';
+  int _getTax() {
+    int subtotal = _getSubtotal();
+    return (subtotal * 0.11).round();
   }
 
-  String _calculateTotal() {
-    int subtotal = 10000000 + _getTambahanCost();
-    int tax = (subtotal * 0.11).round();
-    int total = subtotal + tax;
-    String t = total.toString();
-    if (t.length > 6) return '${t.substring(0, 2)}.${t.substring(2, 5)}.${t.substring(5)}';
-    return '${t.substring(0, 3)}.${t.substring(3)}';
+  int _calculateTotal() {
+    return _getSubtotal() + _getTax();
   }
 }

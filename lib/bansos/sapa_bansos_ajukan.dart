@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/auth/services/auth_service.dart';
+import 'package:flutter_application_1/bansos/services/bansos_service.dart';
 
 class SapaBansosAjukanPage extends StatefulWidget {
   const SapaBansosAjukanPage({super.key});
@@ -10,66 +12,115 @@ class SapaBansosAjukanPage extends StatefulWidget {
 class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
   int _currentStep = 0; // 0=Data Diri, 1=Data Ekonomi, 2=Upload Dokumen, 3=Konfirmasi
 
+  // Services
+  final AuthService _authService = AuthService();
+  final BansosService _bansosService = BansosService();
+
   // Controllers Step 1
-  final _noKkCtrl = TextEditingController();
   final _nikCtrl = TextEditingController();
   final _namaCtrl = TextEditingController();
   final _tempatLahirCtrl = TextEditingController();
   final _tglLahirCtrl = TextEditingController();
   String? _jenisKelamin;
-  final _kabupatenCtrl = TextEditingController();
-  final _kecamatanCtrl = TextEditingController();
-  final _kelurahanCtrl = TextEditingController(); // Kelurahan/Desa 1
-  final _rtCtrl = TextEditingController();
-  final _rwCtrl = TextEditingController();
   final _alamatCtrl = TextEditingController();
-  final _ibuKandungCtrl = TextEditingController();
   final _teleponCtrl = TextEditingController();
-  final _kelurahan2Ctrl = TextEditingController(); // Kelurahan/Desa 2
+  
+  // Field input manual
+  final _ibuKandungCtrl = TextEditingController();
 
   // Controllers Step 2
-  String? _penghasilan;
+  final _penghasilanCtrl = TextEditingController();
   final _tanggunganCtrl = TextEditingController();
 
-  final List<String> _penghasilanList = [
-    '< Rp 1.000.000',
-    'Rp 1.000.000 - Rp 2.500.000',
-    'Rp 2.500.000 - Rp 5.000.000',
-    '> Rp 5.000.000'
-  ];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    setState(() => _isLoading = true);
+    try {
+      final profile = await _authService.getFullProfile();
+      if (profile != null) {
+        setState(() {
+          _nikCtrl.text = profile['nik']?.toString() ?? '';
+          _namaCtrl.text = profile['nama_lengkap']?.toString() ?? '';
+          _tempatLahirCtrl.text = profile['tempat_lahir']?.toString() ?? '';
+          _tglLahirCtrl.text = profile['tanggal_lahir']?.toString() ?? '';
+          _alamatCtrl.text = profile['alamat_lengkap']?.toString() ?? '';
+          _teleponCtrl.text = profile['telepon']?.toString() ?? '';
+          final jkRaw = profile['jenis_kelamin']?.toString().toLowerCase() ?? '';
+          if (jkRaw.startsWith('l') || jkRaw == 'pria') {
+            _jenisKelamin = 'Laki-laki';
+          } else if (jkRaw.startsWith('p') || jkRaw == 'wanita') {
+            _jenisKelamin = 'Perempuan';
+          } else {
+            _jenisKelamin = null;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load profile: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
-    _noKkCtrl.dispose();
     _nikCtrl.dispose();
     _namaCtrl.dispose();
     _tempatLahirCtrl.dispose();
     _tglLahirCtrl.dispose();
-    _kabupatenCtrl.dispose();
-    _kecamatanCtrl.dispose();
-    _kelurahanCtrl.dispose();
-    _rtCtrl.dispose();
-    _rwCtrl.dispose();
     _alamatCtrl.dispose();
     _ibuKandungCtrl.dispose();
     _teleponCtrl.dispose();
-    _kelurahan2Ctrl.dispose();
+    _penghasilanCtrl.dispose();
     _tanggunganCtrl.dispose();
     super.dispose();
   }
 
-  void _nextStep() {
+  void _nextStep() async {
     if (_currentStep < 3) {
       setState(() => _currentStep++);
     } else {
       // Submit form
-      _showSuccessDialog();
+      await _submitApplication();
     }
   }
 
   void _prevStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
+    }
+  }
+
+  Future<void> _submitApplication() async {
+    if (_ibuKandungCtrl.text.isEmpty || _penghasilanCtrl.text.isEmpty || _tanggunganCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lengkapi semua data terlebih dahulu')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _bansosService.apply(
+        programId: '40000000-0000-0000-0000-000000000001',
+        namaIbuKandung: _ibuKandungCtrl.text,
+        penghasilanBulanan: double.tryParse(_penghasilanCtrl.text) ?? 0,
+        jumlahTanggungan: int.tryParse(_tanggunganCtrl.text) ?? 0,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pengajuan berhasil dikirim!')));
+      _showSuccessDialog();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -150,46 +201,48 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
           },
         ),
       ),
-      body: Column(
-        children: [
-          // Custom Stepper Header
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            child: _buildStepperHeader(),
-          ),
-          const Divider(height: 1, color: Color(0xFFE5E7EB)),
-
-          // Form Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: _buildStepContent(),
-            ),
-          ),
-
-          // Bottom Buttons
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(20),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _nextStep,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2979FF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // Custom Stepper Header
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  child: _buildStepperHeader(),
                 ),
-                child: Text(
-                  _currentStep == 3 ? 'Kirim' : 'Kirim', // Looking at screenshot, it always says "Kirim" actually. But typically "Selanjutnya"
-                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+
+                // Form Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildStepContent(),
+                  ),
                 ),
-              ),
+
+                // Bottom Buttons
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _nextStep,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2979FF),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Text(
+                        _currentStep == 3 ? 'Kirim' : 'Selanjutnya',
+                        style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -269,9 +322,9 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
       case 1:
         return _buildStep2();
       case 2:
-        return _buildStep3(); // Placeholder for documents
+        return _buildStep3();
       case 3:
-        return _buildStep4(); // Placeholder for confirmation
+        return _buildStep4();
       default:
         return const SizedBox();
     }
@@ -290,12 +343,10 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Isilah data dibawah ini dengan jujur dan benar.',
+          'Beberapa data diisi secara otomatis dari profil Anda.',
           style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
         ),
         const SizedBox(height: 20),
-        _buildTextField('Nomor Kartu Keluarga', _noKkCtrl, hint: 'Masukkan nomor kartu keluarga', keyboardType: TextInputType.number),
-        const SizedBox(height: 16),
         _buildTextField('NIK', _nikCtrl, hint: 'Masukkan NIK', keyboardType: TextInputType.number),
         const SizedBox(height: 16),
         _buildTextField('Nama Lengkap Sesuai KTP *', _namaCtrl, hint: 'Masukkan nama'),
@@ -332,21 +383,6 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildTextField('Kabupaten/Kota', _kabupatenCtrl, hint: 'Masukkan kabupaten/kota'),
-        const SizedBox(height: 16),
-        _buildTextField('Kecamatan', _kecamatanCtrl, hint: 'Masukkan kecamatan'),
-        const SizedBox(height: 16),
-        _buildTextField('Kelurahan/Desa', _kelurahanCtrl, hint: 'Masukkan kelurahan/desa'),
-        const SizedBox(height: 16),
-        // RT/RW Row
-        Row(
-          children: [
-            Expanded(child: _buildTextField('RT', _rtCtrl, hint: 'No RT', keyboardType: TextInputType.number)),
-            const SizedBox(width: 16),
-            Expanded(child: _buildTextField('RW', _rwCtrl, hint: 'No RW', keyboardType: TextInputType.number)),
-          ],
-        ),
-        const SizedBox(height: 16),
         // Alamat Text Area
         const Text('Alamat sesuai KTP', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
         const SizedBox(height: 6),
@@ -366,11 +402,9 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildTextField('Nama Lengkap Ibu Kandung', _ibuKandungCtrl, hint: 'Masukkan nama lengkap ibu kandung'),
-        const SizedBox(height: 16),
         _buildTextField('Nomor Telepon yang Bisa Dihubungi', _teleponCtrl, hint: 'Masukkan nomor telepon', keyboardType: TextInputType.phone),
         const SizedBox(height: 16),
-        _buildTextField('Kelurahan/Desa', _kelurahan2Ctrl, hint: 'Masukkan kelurahan/desa'),
+        _buildTextField('Nama Lengkap Ibu Kandung', _ibuKandungCtrl, hint: 'Masukkan nama lengkap ibu kandung'),
       ],
     );
   }
@@ -392,55 +426,26 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
           style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
         ),
         const SizedBox(height: 20),
-        // Penghasilan Per Bulan Dropdown
-        const Text('Penghasilan Per Bulan', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _penghasilan,
-              isExpanded: true,
-              hint: const Text('Pilih Penghasilan', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF9CA3AF))),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9CA3AF)),
-              items: _penghasilanList.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF1A1A1A))),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _penghasilan = newValue;
-                });
-              },
-            ),
-          ),
+        
+        _buildTextField(
+          'Penghasilan Per Bulan (Rp)', 
+          _penghasilanCtrl, 
+          hint: 'Contoh: 1500000', 
+          keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
-        // Jumlah Tanggungan
-        _buildTextField('Jumlah Tanggungan', _tanggunganCtrl, hint: 'Masukkan NIK', keyboardType: TextInputType.number), // Assuming NIK here is from screenshot or "Masukkan jumlah tanggungan"
-        const SizedBox(height: 16),
-        
-        // Show all fields from step 1 but disabled or as placeholders just to mimic the screenshot
-        // The screenshot shows Step 2 having the same layout underneath Data Ekonomi? 
-        // Wait, the screenshot "Halaman Ajukan Bansos" (Step 2) shows "Data Ekonomi Pemohon" with "Penghasilan Per Bulan", "Jumlah Tanggungan", and then it shows "Nama Lengkap Sesuai KTP", "Tempat Lahir", "Tanggal Lahir" which are exactly from Step 1.
-        // That means the user scrolled down, and the screenshot is just the same long form with Step 2 active, OR the design is to show all steps stacked.
-        // Actually, looking closely at the 2nd image for Ajukan Bansos:
-        // It says "Data Ekonomi Pemohon" -> Penghasilan, Jumlah Tanggungan. Then "Nama Lengkap Sesuai KTP *" !!
-        // This is clearly a mockup error where they pasted Data Diri fields below Data Ekonomi fields.
-        // I'll just use Penghasilan and Tanggungan for Data Ekonomi to make it logical.
+        _buildTextField(
+          'Jumlah Tanggungan', 
+          _tanggunganCtrl, 
+          hint: 'Contoh: 3', 
+          keyboardType: TextInputType.number,
+        ),
       ],
     );
   }
 
   // ─────────────────────────────────────────────
-  // STEP 3 & 4: Placeholders
+  // STEP 3: Placeholders
   // ─────────────────────────────────────────────
   Widget _buildStep3() {
     return Column(
@@ -507,6 +512,31 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
           style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280)),
         ),
         const SizedBox(height: 20),
+
+        // Summary Data
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSummaryRow('NIK', _nikCtrl.text),
+              _buildSummaryRow('Nama Lengkap', _namaCtrl.text),
+              _buildSummaryRow('Tempat, Tanggal Lahir', '${_tempatLahirCtrl.text}, ${_tglLahirCtrl.text}'),
+              _buildSummaryRow('Jenis Kelamin', _jenisKelamin ?? '-'),
+              _buildSummaryRow('Telepon', _teleponCtrl.text),
+              _buildSummaryRow('Nama Ibu Kandung', _ibuKandungCtrl.text),
+              _buildSummaryRow('Penghasilan', 'Rp ${_penghasilanCtrl.text}'),
+              _buildSummaryRow('Tanggungan', '${_tanggunganCtrl.text} Orang'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -515,6 +545,7 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
             border: Border.all(color: const Color(0xFFFFCC80)),
           ),
           child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.info_outline, color: Color(0xFFE65100), size: 24),
               SizedBox(width: 12),
@@ -528,6 +559,32 @@ class _SapaBansosAjukanPageState extends State<SapaBansosAjukanPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280)),
+            ),
+          ),
+          const Text(':', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '-' : value,
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

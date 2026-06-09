@@ -15,13 +15,14 @@ export class PointJatimService {
     const rows = await this.database.query<Record<string, unknown>>(
       `
         SELECT id, name, sector, location, investment_value::float, irr::float, npv::float,
-               payback_period, status, description
+               payback_period, status, description, image_url
         FROM point_jatim.projects
         WHERE ($1::text IS NULL OR sector ILIKE $1)
         ORDER BY investment_value DESC
       `,
       [sector && sector !== 'Semua' ? sector : null],
     );
+    console.log('GET PROJECTS DB ROWS:', rows);
     if (rows) {
       return { data: rows };
     }
@@ -33,7 +34,7 @@ export class PointJatimService {
     const row = await this.database.queryOne<Record<string, unknown>>(
       `
         SELECT id, name, sector, location, investment_value::float, irr::float, npv::float,
-               payback_period, status, description
+               payback_period, status, description, image_url
         FROM point_jatim.projects
         WHERE id = $1
       `,

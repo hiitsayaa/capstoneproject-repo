@@ -188,38 +188,7 @@ class SapaBansosProgramDetailPage extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Analisis Finansial
-              const Text(
-                'Analisis Finansial',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFC8E6C9)),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _FinansialItem(label: 'IRR', value: '19.82%'),
-                    SizedBox(width: 1, height: 40, child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFFA5D6A7)))),
-                    _FinansialItem(label: 'NPV', value: '7,85 M'),
-                    SizedBox(width: 1, height: 40, child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFFA5D6A7)))),
-                    _FinansialItem(label: 'Payback Period', value: '5.5 Tahun'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -244,36 +213,3 @@ class SapaBansosProgramDetailPage extends StatelessWidget {
   }
 }
 
-class _FinansialItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _FinansialItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 10,
-            color: Color(0xFF43A047),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1B5E20),
-          ),
-        ),
-      ],
-    );
-  }
-}

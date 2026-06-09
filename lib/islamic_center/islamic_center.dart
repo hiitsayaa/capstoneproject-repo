@@ -27,35 +27,49 @@ class _IslamicCenterPageState extends State<IslamicCenterPage> {
           children: [
             const SizedBox(height: 24),
             // Logo and Header
-            Image.asset('assets/logo_islamic_center.png', height: 100),
-            const SizedBox(height: 16),
-            const Text('Islamic Center', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF2979FF)),
-                borderRadius: BorderRadius.circular(20),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  // Logo
+                  Center(child: Image.asset('assets/logolayanan1.png', height: 120)),
+                  const SizedBox(height: 24),
+                  
+                  // Title
+                  const Text('Islamic Center', style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                  const SizedBox(height: 12),
+                  
+                  // Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: const Color(0xFF2979FF)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('Biro Kesejahteraan Rakyat', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF2979FF), fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Description
+                  const Text(
+                    'Pemesanan online fasilitas aula dan asrama di Islamic Center Surabaya.',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF1A1A1A), height: 1.5),
+                  ),
+                ],
               ),
-              child: const Text('Biro Kesejahteraan Rakyat', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF2979FF), fontWeight: FontWeight.w500)),
             ),
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Pemesanan online fasilitas aula dan asrama di Islamic Center Surabaya.',
-                textAlign: TextAlign.left,
-                style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.black87),
-              ),
-            ),
-            const SizedBox(height: 20),
             // Tabs
             const TabBar(
               labelColor: Colors.black,
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.black,
-              labelStyle: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13),
-              unselectedLabelStyle: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 13),
+              labelPadding: EdgeInsets.zero,
+              labelStyle: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12),
+              unselectedLabelStyle: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 12),
               tabs: [
                 Tab(text: 'Layanan'),
                 Tab(text: 'Operasional'),

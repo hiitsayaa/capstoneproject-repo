@@ -1,38 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/islamic_center/islamic_center_detail.dart';
+import 'package:flutter_application_1/islamic_center/services/islamic_center_service.dart';
 
-class IslamicCenterListPage extends StatelessWidget {
+class IslamicCenterListPage extends StatefulWidget {
   final String category;
+  final String pax;
   
-  const IslamicCenterListPage({super.key, required this.category});
+  const IslamicCenterListPage({super.key, required this.category, this.pax = ''});
 
-  List<Map<String, String>> _getData() {
-    if (category == 'Aula') {
-      return [
-        {'title': 'Hall Utama', 'capacity': '2.000 Orang', 'price': 'Rp10.000.000'},
-        {'title': 'Ruang Rapat', 'capacity': '150 Orang', 'price': 'Rp2.000.000'},
-        {'title': 'Ruang VIP', 'capacity': '25 Orang', 'price': 'Rp1.500.000'},
-        {'title': 'Ruang VIP 2', 'capacity': '50 Orang', 'price': 'Rp1.000.000'},
-      ];
-    } else if (category == 'Asrama') {
-      return [
-        {'title': 'Kamar 2 Bed', 'capacity': '2 Orang', 'price': 'Rp175.000'},
-        {'title': 'Kamar 4 Bed', 'capacity': '4 Orang', 'price': 'Rp175.000'},
-        {'title': 'Kamar 6 Bed', 'capacity': '6 Orang', 'price': 'Rp175.000'},
-      ];
-    } else {
-      return [
-        {'title': 'Ruang VIP Masjid', 'capacity': '100 Orang', 'price': 'Rp3.000.000'},
-        {'title': 'Akad Nikah + Petugas', 'capacity': '100 Orang', 'price': 'Rp3.500.000'},
-        {'title': 'Ruang VIP 2', 'capacity': '100 Orang', 'price': 'Rp3.500.000'},
-      ];
-    }
+  @override
+  State<IslamicCenterListPage> createState() => _IslamicCenterListPageState();
+}
+
+class _IslamicCenterListPageState extends State<IslamicCenterListPage> {
+  bool _isLoading = true;
+  List<dynamic> _data = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    final data = await IslamicCenterService.getFacilities(category: widget.category);
+    setState(() {
+      _data = data;
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = _getData();
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -40,48 +39,100 @@ class IslamicCenterListPage extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          category == 'Masjid' ? 'Fasilitas Ruangan Masjid' : 'Fasilitas $category',
+          widget.category == 'Masjid' ? 'Fasilitas Ruangan Masjid' : 'Fasilitas ${widget.category}',
           style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 16),
         ),
         centerTitle: false,
         leading: IconButton(icon: const Icon(Icons.chevron_left, size: 28), onPressed: () => Navigator.pop(context)),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: data.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final item = data[index];
-          return _buildCard(context, item['title']!, item['capacity']!, item['price']!);
-        },
-      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _data.isEmpty 
+          ? const Center(child: Text('Fasilitas tidak ditemukan', style: TextStyle(fontFamily: 'Poppins', color: Colors.grey)))
+          : ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: _data.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final item = _data[index];
+                return _buildCard(
+                  context, 
+                  item['id'] ?? '',
+                  item['name'] ?? '', 
+                  '${item['capacity']} Orang', 
+                  item['price_label'] ?? '-',
+                  item['available'] == true ? 'Tersedia' : 'Penuh',
+                  item['image_url'] ?? '',
+                );
+              },
+            ),
     );
   }
 
-  Widget _buildCard(BuildContext context, String title, String capacity, String price) {
+  Widget _buildCard(BuildContext context, String id, String title, String capacity, String price, String status, String imageUrl) {
+    bool isAvailable = status == 'Tersedia';
+
+    if (imageUrl.isEmpty || imageUrl.contains('majadigi.go.id')) {
+      if (widget.category == 'Asrama') {
+        imageUrl = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400';
+      } else if (widget.category == 'Masjid') {
+        imageUrl = 'https://images.unsplash.com/photo-1564683214965-3619addd900d?auto=format&fit=crop&q=80&w=400';
+      } else {
+        imageUrl = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=400';
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 120, height: 110,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE0E0E0),
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 120,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
+                image: DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-            child: const Icon(Icons.image, color: Colors.grey, size: 40),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(title, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          border: Border.all(color: const Color(0xFF2979FF)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(widget.category, style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF2979FF), fontWeight: FontWeight.w600)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isAvailable ? Colors.green.shade50 : Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(status, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: isAvailable ? Colors.green : Colors.red, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(title, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -93,12 +144,14 @@ class IslamicCenterListPage extends StatelessWidget {
                           const Text('Kapasitas', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Colors.grey)),
                         ],
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(price, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600)),
-                          const Text('Estimasi Harga', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Colors.grey)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(price, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            const Text('Estimasi Harga', style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: Colors.grey)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -108,7 +161,15 @@ class IslamicCenterListPage extends StatelessWidget {
                     height: 32,
                     child: OutlinedButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const IslamicCenterDetailPage()));
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => IslamicCenterDetailPage(
+                          id: id,
+                          title: title,
+                          category: widget.category,
+                          imageUrl: imageUrl,
+                          capacity: capacity,
+                          price: price,
+                          pax: widget.pax,
+                        )));
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF2979FF)),
@@ -122,6 +183,7 @@ class IslamicCenterListPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

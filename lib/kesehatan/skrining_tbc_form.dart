@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_application_1/kesehatan/skrining_tbc_hasil.dart';
+import 'package:flutter_application_1/kesehatan/services/skrining_tbc_service.dart';
+import 'package:flutter_application_1/auth/services/auth_service.dart';
 
 // ─────────────────────────────────────────────
 // Screening History Storage (in-memory)
@@ -130,13 +132,11 @@ class SkriningQuestion {
   final int nomor;
   final String text;
   final String section;
-  final bool autoFilled; // For questions 21-23
 
   const SkriningQuestion({
     required this.nomor,
     required this.text,
     required this.section,
-    this.autoFilled = false,
   });
 }
 
@@ -164,9 +164,9 @@ const List<SkriningQuestion> skriningQuestions = [
   SkriningQuestion(nomor: 18, text: 'Sedang hamil (Ibu Hamil)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan'),
   SkriningQuestion(nomor: 19, text: 'Memiliki kebiasaan merokok', section: 'Riwayat Pengobatan dan Kondisi Kesehatan'),
   SkriningQuestion(nomor: 20, text: 'Status usia (0-14 tahun atau lansia di atas 60 tahun)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan'),
-  SkriningQuestion(nomor: 21, text: 'Kondisi gizi (kurang gizi atau kurus)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan', autoFilled: true),
-  SkriningQuestion(nomor: 22, text: 'Kurang Gizi (kurus)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan', autoFilled: true),
-  SkriningQuestion(nomor: 23, text: 'Lansia (diatas 60 tahun)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan', autoFilled: true),
+  SkriningQuestion(nomor: 21, text: 'Kondisi gizi (kurang gizi atau kurus)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan'),
+  SkriningQuestion(nomor: 22, text: 'Kurang Gizi (kurus)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan'),
+  SkriningQuestion(nomor: 23, text: 'Lansia (diatas 60 tahun)', section: 'Riwayat Pengobatan dan Kondisi Kesehatan'),
 ];
 
 // ─────────────────────────────────────────────
@@ -200,13 +200,31 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
   final _beratCtrl = TextEditingController();
   final _tinggiCtrl = TextEditingController();
   final _alamatCtrl = TextEditingController();
-  String? _pekerjaan;
-  String? _kabupatenKota;
-  String? _kecamatan;
-  String? _kelurahan;
+  final _pekerjaanCtrl = TextEditingController();
+  final _kabupatenKotaCtrl = TextEditingController();
+  final _kecamatanCtrl = TextEditingController();
+  final _kelurahanCtrl = TextEditingController();
 
   // Step 2 - Questions
   final Map<int, bool> _jawaban = {};
+
+  bool _isLoading = false;
+  List<dynamic> _realRiwayat = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRiwayat();
+  }
+
+  Future<void> _fetchRiwayat() async {
+    final data = await SkriningTbcService.getRiwayat();
+    if (mounted) {
+      setState(() {
+        _realRiwayat = data;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -219,30 +237,31 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
     _beratCtrl.dispose();
     _tinggiCtrl.dispose();
     _alamatCtrl.dispose();
+    _pekerjaanCtrl.dispose();
+    _kabupatenKotaCtrl.dispose();
+    _kecamatanCtrl.dispose();
+    _kelurahanCtrl.dispose();
     super.dispose();
   }
 
-  // Auto-fill logic for questions 21-23
-  void _updateAutoFilledQuestions() {
-    // Q21 & Q22: Kurang gizi based on BMI
-    if (_beratCtrl.text.isNotEmpty && _tinggiCtrl.text.isNotEmpty) {
-      final berat = double.tryParse(_beratCtrl.text) ?? 0;
-      final tinggiCm = double.tryParse(_tinggiCtrl.text) ?? 0;
-      if (berat > 0 && tinggiCm > 0) {
-        final tinggiM = tinggiCm / 100;
-        final bmi = berat / (tinggiM * tinggiM);
-        _jawaban[21] = bmi < 18.5;
-        _jawaban[22] = bmi < 18.5;
-      }
-    }
-    // Q23: Lansia based on age
-    if (_tanggalLahir != null) {
-      final age = DateTime.now().difference(_tanggalLahir!).inDays ~/ 365;
-      _jawaban[23] = age >= 60;
-      // Also update Q20 for usia 0-14 or >= 60
-      if (age <= 14 || age >= 60) {
-        _jawaban[20] = true;
-      }
+  // User Profile
+  Future<void> _loadUserProfile() async {
+    final authService = AuthService();
+    final profile = await authService.getFullProfile();
+    if (mounted && profile != null) {
+      setState(() {
+        _namaCtrl.text = profile['nama_lengkap'] ?? '';
+        _nikCtrl.text = profile['nik'] ?? '';
+        _teleponCtrl.text = profile['telepon'] ?? '';
+        _alamatCtrl.text = profile['alamat_lengkap'] ?? '';
+        
+        if (profile['tanggal_lahir'] != null && profile['tanggal_lahir'].toString().isNotEmpty) {
+          _tanggalLahir = DateTime.tryParse(profile['tanggal_lahir'].toString());
+        }
+        if (profile['jenis_kelamin'] != null && profile['jenis_kelamin'].toString().isNotEmpty) {
+          _jenisKelamin = profile['jenis_kelamin'] == 'L' ? 'Laki-laki' : (profile['jenis_kelamin'] == 'P' ? 'Perempuan' : profile['jenis_kelamin']);
+        }
+      });
     }
   }
 
@@ -281,9 +300,6 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
 
   void _goNext() {
     if (_currentStep < 3) {
-      if (_currentStep == 1) {
-        _updateAutoFilledQuestions();
-      }
       setState(() => _currentStep++);
     }
   }
@@ -294,41 +310,60 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
     }
   }
 
-  void _submitData() {
+  void _submitData() async {
+    setState(() => _isLoading = true);
     final terindikasi = _isTerminated();
-    final record = SkriningRecord(
-      namaLengkap: _namaCtrl.text,
-      nik: _nikCtrl.text,
-      tanggal: DateTime.now(),
-      terindikasi: terindikasi,
-      identitas: {
-        'jenisKelamin': _jenisKelamin,
-        'telepon': _teleponCtrl.text,
-        'tanggalLahir': _tanggalLahir,
-        'usia': _calculateUsia(),
-        'beratBadan': _beratCtrl.text,
-        'tinggiBadan': _tinggiCtrl.text,
-        'bmi': _calculateBMI(),
-        'alamat': _alamatCtrl.text,
-        'pekerjaan': _pekerjaan,
-        'kabupatenKota': _kabupatenKota,
-        'kecamatan': _kecamatan,
-        'kelurahan': _kelurahan,
-      },
-      jawaban: Map.from(_jawaban),
-    );
-    riwayatSkrining.insert(0, record);
+    
+    final data = {
+      'is_self': _isSelf,
+      'nama': _isSelf == true ? _namaCtrl.text : _pelaporNamaCtrl.text,
+      'nik': _isSelf == true ? _nikCtrl.text : '1234567890123456', // For demo
+      'pelapor_kelompok': _pelaporKelompok,
+      'pelapor_instansi': _pelaporInstansiCtrl.text,
+      'pelapor_telepon': _pelaporTeleponCtrl.text,
+      'jenis_kelamin': _jenisKelamin,
+      'telepon': _teleponCtrl.text,
+      'tanggal_lahir': _tanggalLahir?.toIso8601String(),
+      'berat_badan': double.tryParse(_beratCtrl.text) ?? 0,
+      'tinggi_badan': double.tryParse(_tinggiCtrl.text) ?? 0,
+      'usia': _calculateUsia(),
+      'alamat': _alamatCtrl.text,
+      'pekerjaan': _pekerjaanCtrl.text,
+      'kabupaten_kota': _kabupatenKotaCtrl.text,
+      'kecamatan': _kecamatanCtrl.text,
+      'kelurahan': _kelurahanCtrl.text,
+      'answers': _jawaban.entries.map((e) => {
+        'question_id': e.key.toString(),
+        'answer': e.value
+      }).toList(),
+    };
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SkriningTbcHasilPage(
-          terindikasi: terindikasi,
-          namaLengkap: _namaCtrl.text,
-          waktuSkrining: DateTime.now(),
+    final result = await SkriningTbcService.submitScreening(data);
+    setState(() => _isLoading = false);
+
+    if (result != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Berhasil menyimpan riwayat skrining.'),
+          backgroundColor: Color(0xFF43A047),
         ),
-      ),
-    );
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SkriningTbcHasilPage(
+            recordId: result['id'].toString(),
+            terindikasi: terindikasi,
+            namaLengkap: _isSelf == true ? _namaCtrl.text : _pelaporNamaCtrl.text,
+            waktuSkrining: DateTime.now(),
+          ),
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal menyimpan skrining.')),
+      );
+    }
   }
 
   void _showConfirmDialog() {
@@ -364,7 +399,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: _isLoading ? null : () {
                     Navigator.pop(ctx);
                     _submitData();
                   },
@@ -373,7 +408,10 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Submit', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                  child: _isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Submit', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+
                 ),
               ),
             ],
@@ -413,7 +451,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
               margin: const EdgeInsets.all(20),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _currentStep == 3 ? const Color(0xFF00897B) : const Color(0xFFE0F2F1),
+                color: _currentStep == 3 ? const Color(0xFF2979FF) : const Color(0xFFE0F2F1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -424,7 +462,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _currentStep == 3 ? Colors.white : const Color(0xFF00897B),
+                      color: _currentStep == 3 ? Colors.white : const Color(0xFF2979FF),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -484,9 +522,19 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildRadioChip('Ya', _isSelf == true, () => setState(() => _isSelf = true)),
+            _buildRadioChip('Ya', _isSelf == true, () {
+              setState(() => _isSelf = true);
+              _loadUserProfile();
+            }),
             const SizedBox(width: 12),
-            _buildRadioChip('Tidak', _isSelf == false, () => setState(() => _isSelf = false)),
+            _buildRadioChip('Tidak', _isSelf == false, () {
+              setState(() {
+                _isSelf = false;
+                _namaCtrl.clear();
+                _nikCtrl.clear();
+                _alamatCtrl.clear();
+              });
+            }),
           ],
         ),
         const SizedBox(height: 24),
@@ -501,8 +549,8 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
             child: ElevatedButton(
               onPressed: (_namaCtrl.text.isNotEmpty && _nikCtrl.text.isNotEmpty) ? _goNext : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00897B),
-                disabledBackgroundColor: const Color(0xFFB2DFDB),
+                backgroundColor: const Color(0xFF2979FF),
+                disabledBackgroundColor: const Color(0xFF90CAF9),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
@@ -524,9 +572,9 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
     return [
       const Text('Masukkan Identitas Anda', style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
       const SizedBox(height: 16),
-      _buildTextField('Nama Lengkap', _namaCtrl, hint: 'Masukkan nama'),
+      _buildTextField('Nama Lengkap', _namaCtrl, hint: 'Masukkan nama', readOnly: _isSelf == true),
       const SizedBox(height: 12),
-      _buildTextField('NIK', _nikCtrl, hint: 'NIK harus 16 digit angka', keyboardType: TextInputType.number),
+      _buildTextField('NIK', _nikCtrl, hint: 'NIK harus 16 digit angka', keyboardType: TextInputType.number, readOnly: _isSelf == true),
     ];
   }
 
@@ -622,34 +670,13 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         _buildTextField('Alamat Domisili', _alamatCtrl, hint: 'Cth: Jl. Merdeka No. 20'),
         const SizedBox(height: 16),
 
-        _buildSearchableDropdown('Pekerjaan', _pekerjaan, pekerjaanList, (v) => setState(() => _pekerjaan = v)),
+        _buildTextField('Pekerjaan', _pekerjaanCtrl, hint: 'Cth: Buruh, Wiraswasta, PNS'),
         const SizedBox(height: 16),
-        _buildSearchableDropdown('Kabupaten / Kota', _kabupatenKota, kabupatenKotaList, (v) {
-          setState(() {
-            _kabupatenKota = v;
-            _kecamatan = null;
-            _kelurahan = null;
-          });
-        }),
+        _buildTextField('Kota/Kabupaten', _kabupatenKotaCtrl, hint: 'Cth: Kota Malang'),
         const SizedBox(height: 16),
-        _buildSearchableDropdown(
-          'Kecamatan',
-          _kecamatan,
-          _kabupatenKota != null ? (kecamatanMap[_kabupatenKota] ?? []) : [],
-          (v) {
-            setState(() {
-              _kecamatan = v;
-              _kelurahan = null;
-            });
-          },
-        ),
+        _buildTextField('Kecamatan', _kecamatanCtrl, hint: 'Cth: Lowokwaru'),
         const SizedBox(height: 16),
-        _buildSearchableDropdown(
-          'Kelurahan / Desa',
-          _kelurahan,
-          _kecamatan != null ? (kelurahanMap[_kecamatan] ?? []) : [],
-          (v) => setState(() => _kelurahan = v),
-        ),
+        _buildTextField('Desa/Kelurahan', _kelurahanCtrl, hint: 'Cth: Jatimulyo'),
         const SizedBox(height: 24),
 
         SizedBox(
@@ -657,7 +684,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
           child: ElevatedButton(
             onPressed: _goNext,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00897B),
+              backgroundColor: const Color(0xFF2979FF),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -668,7 +695,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         Center(
           child: TextButton(
             onPressed: _goBack,
-            child: const Text('Kembali', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF00897B))),
+            child: const Text('Kembali', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
           ),
         ),
       ],
@@ -706,7 +733,6 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
             );
           }
 
-          final isDisabled = q.autoFilled;
           widgets.add(
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -715,23 +741,21 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
                 children: [
                   Text(
                     '${q.nomor}. ${q.text}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
-                      color: isDisabled ? const Color(0xFF9CA3AF) : const Color(0xFF1A1A1A),
+                      color: Color(0xFF1A1A1A),
                       height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _buildYaTidakChip('Ya', _jawaban[q.nomor] == true, isDisabled
-                        ? null
-                        : () => setState(() => _jawaban[q.nomor] = true)),
+                      _buildYaTidakChip('Ya', _jawaban[q.nomor] == true, 
+                        () => setState(() => _jawaban[q.nomor] = true)),
                       const SizedBox(width: 12),
-                      _buildYaTidakChip('Tidak', _jawaban[q.nomor] == false, isDisabled
-                        ? null
-                        : () => setState(() => _jawaban[q.nomor] = false)),
+                      _buildYaTidakChip('Tidak', _jawaban[q.nomor] == false, 
+                        () => setState(() => _jawaban[q.nomor] = false)),
                     ],
                   ),
                 ],
@@ -751,7 +775,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
           child: ElevatedButton(
             onPressed: _goNext,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00897B),
+              backgroundColor: const Color(0xFF2979FF),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -762,7 +786,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         Center(
           child: TextButton(
             onPressed: _goBack,
-            child: const Text('Kembali', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF00897B))),
+            child: const Text('Kembali', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2979FF))),
           ),
         ),
       ],
@@ -798,10 +822,10 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         _buildPreviewRow('Tinggi Badan', _tinggiCtrl.text.isEmpty ? '-' : '${_tinggiCtrl.text} cm'),
         _buildPreviewRow('Indeks Massa Tubuh', _calculateBMI() > 0 ? _calculateBMI().toStringAsFixed(1) : '-'),
         _buildPreviewRow('Alamat Domisili', _alamatCtrl.text.isEmpty ? '-' : _alamatCtrl.text),
-        _buildPreviewRow('Pekerjaan', _pekerjaan ?? '-'),
-        _buildPreviewRow('Kota/Kabupaten', _kabupatenKota ?? '-'),
-        _buildPreviewRow('Kecamatan', _kecamatan ?? '-'),
-        _buildPreviewRow('Kelurahan/Desa', _kelurahan ?? '-'),
+        _buildPreviewRow('Pekerjaan', _pekerjaanCtrl.text.isEmpty ? '-' : _pekerjaanCtrl.text),
+        _buildPreviewRow('Kota/Kabupaten', _kabupatenKotaCtrl.text.isEmpty ? '-' : _kabupatenKotaCtrl.text),
+        _buildPreviewRow('Kecamatan', _kecamatanCtrl.text.isEmpty ? '-' : _kecamatanCtrl.text),
+        _buildPreviewRow('Kelurahan/Desa', _kelurahanCtrl.text.isEmpty ? '-' : _kelurahanCtrl.text),
 
         const SizedBox(height: 20),
 
@@ -809,7 +833,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         const Text('Keluhan yang Dirasakan', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
         const Divider(color: Color(0xFFE5E7EB)),
         ...skriningQuestions.where((q) => q.nomor <= 10).map(
-          (q) => _buildPreviewRow(q.text, _jawaban[q.nomor] == true ? 'Ya' : 'Tidak'),
+          (q) => _buildPreviewRow(q.text, _jawaban[q.nomor] == null ? 'Belum diisi' : (_jawaban[q.nomor] == true ? 'Ya' : 'Tidak')),
         ),
 
         const SizedBox(height: 20),
@@ -818,7 +842,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         const Text('Informasi Lainnya', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
         const Divider(color: Color(0xFFE5E7EB)),
         ...skriningQuestions.where((q) => q.nomor > 10).map(
-          (q) => _buildPreviewRow(q.text, _jawaban[q.nomor] == true ? 'Ya' : 'Tidak'),
+          (q) => _buildPreviewRow(q.text, _jawaban[q.nomor] == null ? 'Belum diisi' : (_jawaban[q.nomor] == true ? 'Ya' : 'Tidak')),
         ),
 
         const SizedBox(height: 24),
@@ -858,10 +882,10 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00897B) : Colors.white,
+          color: isSelected ? const Color(0xFF2979FF) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFF00897B) : const Color(0xFFE5E7EB),
+            color: isSelected ? const Color(0xFF2979FF) : const Color(0xFFE5E7EB),
           ),
         ),
         child: Row(
@@ -896,14 +920,10 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? (label == 'Ya' ? const Color(0xFF00897B) : const Color(0xFFE8F5E9))
-              : Colors.white,
+          color: isSelected ? const Color(0xFF2979FF) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? (label == 'Ya' ? const Color(0xFF00897B) : const Color(0xFF43A047))
-                : const Color(0xFFE5E7EB),
+            color: isSelected ? const Color(0xFF2979FF) : const Color(0xFFE5E7EB),
           ),
         ),
         child: Row(
@@ -915,7 +935,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
               color: !enabled
                   ? const Color(0xFFBDBDBD)
                   : isSelected
-                      ? (label == 'Ya' ? Colors.white : const Color(0xFF43A047))
+                      ? Colors.white
                       : const Color(0xFF9CA3AF),
             ),
             const SizedBox(width: 4),
@@ -928,7 +948,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
                 color: !enabled
                     ? const Color(0xFFBDBDBD)
                     : isSelected
-                        ? (label == 'Ya' ? Colors.white : const Color(0xFF43A047))
+                        ? Colors.white
                         : const Color(0xFF6B7280),
               ),
             ),
@@ -938,7 +958,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {String? hint, TextInputType? keyboardType}) {
+  Widget _buildTextField(String label, TextEditingController controller, {String? hint, TextInputType? keyboardType, bool readOnly = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -947,6 +967,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          readOnly: readOnly,
           onChanged: (_) => setState(() {}),
           style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
           decoration: InputDecoration(
@@ -954,7 +975,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
             hintStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF9CA3AF)),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF00897B))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2979FF))),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -986,68 +1007,6 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
               icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9CA3AF)),
               items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: onChanged,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchableDropdown(String label, String? value, List<String> items, ValueChanged<String?> onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: items.isEmpty
-              ? null
-              : () async {
-                  final result = await showModalBottomSheet<String>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (ctx) => _SearchableListSheet(title: label, items: items, selected: value),
-                  );
-                  if (result != null) onChanged(result);
-                },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-              borderRadius: BorderRadius.circular(10),
-              color: items.isEmpty ? const Color(0xFFF3F4F6) : Colors.white,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          value ?? 'Pilih $label',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            color: value != null ? const Color(0xFF1A1A1A) : const Color(0xFF9CA3AF),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (value != null) ...[
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: () => onChanged(null),
-                          child: const Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const Icon(Icons.keyboard_arrow_down, size: 20, color: Color(0xFF9CA3AF)),
-              ],
             ),
           ),
         ),
@@ -1088,7 +1047,7 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
   }
 
   Widget _buildRiwayatTable() {
-    if (riwayatSkrining.isEmpty) {
+    if (_realRiwayat.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
@@ -1124,47 +1083,64 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
                 ],
               ),
             ),
-            ...riwayatSkrining.take(5).map((r) {
-              return Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        DateFormat('dd MMMM yyyy', 'id_ID').format(r.tanggal),
-                        style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF1A1A1A)),
+            ..._realRiwayat.take(5).map((r) {
+              final isTerindikasi = r['hasil'] == 'Terindikasi TBC';
+              final tanggal = r['submitted_at'] != null ? DateTime.parse(r['submitted_at']) : DateTime.now();
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SkriningTbcHasilPage(
+                        recordId: r['id']?.toString(),
+                        terindikasi: isTerindikasi,
+                        namaLengkap: r['nama']?.toString() ?? 'Pengguna',
+                        waktuSkrining: tanggal,
                       ),
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: r.terindikasi ? const Color(0xFFFEE2E2) : const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                  );
+                },
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
                         child: Text(
-                          r.terindikasi ? 'Terindikasi TBC' : 'Tidak Terindikasi TBC',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 8,
-                            fontWeight: FontWeight.w600,
-                            color: r.terindikasi ? const Color(0xFFEF4444) : const Color(0xFF43A047),
+                          DateFormat('dd MMMM yyyy', 'id_ID').format(tanggal),
+                          style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF1A1A1A)),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isTerindikasi ? const Color(0xFFFEE2E2) : const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isTerindikasi ? 'Terindikasi TBC' : 'Tidak Terindikasi TBC',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              color: isTerindikasi ? const Color(0xFFEF4444) : const Color(0xFF43A047),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        r.faskes ?? '-',
-                        style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
-                        overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          r['faskes_name'] ?? '-',
+                          style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Color(0xFF6B7280)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }),
@@ -1178,85 +1154,3 @@ class _SkriningTbcFormPageState extends State<SkriningTbcFormPage> {
 // ─────────────────────────────────────────────
 // Searchable List Bottom Sheet
 // ─────────────────────────────────────────────
-
-class _SearchableListSheet extends StatefulWidget {
-  final String title;
-  final List<String> items;
-  final String? selected;
-
-  const _SearchableListSheet({required this.title, required this.items, this.selected});
-
-  @override
-  State<_SearchableListSheet> createState() => _SearchableListSheetState();
-}
-
-class _SearchableListSheetState extends State<_SearchableListSheet> {
-  String _search = '';
-
-  List<String> get _filtered {
-    if (_search.isEmpty) return widget.items;
-    return widget.items.where((i) => i.toLowerCase().contains(_search.toLowerCase())).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              onChanged: (v) => setState(() => _search = v),
-              style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'Cari...',
-                hintStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF9CA3AF)),
-                prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF9CA3AF)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF00897B))),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-            ),
-          ),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _filtered.length,
-              itemBuilder: (ctx, i) {
-                final item = _filtered[i];
-                final isSelected = widget.selected == item;
-                return ListTile(
-                  dense: true,
-                  title: Text(
-                    item,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      color: isSelected ? const Color(0xFF00897B) : const Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF00897B), size: 18) : null,
-                  onTap: () => Navigator.pop(ctx, item),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

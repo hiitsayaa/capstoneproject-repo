@@ -146,7 +146,6 @@ class _SemuaLayananPageState extends State<SemuaLayananPage> {
                           child: Icon(item.icon, color: item.iconColor, size: 22),
                         ),
                   title: Text(item.name, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: Text(item.subtitle, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF9CA3AF))),
                   trailing: const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
                   onTap: () {
                     if (item.id == 'islamic_center') {

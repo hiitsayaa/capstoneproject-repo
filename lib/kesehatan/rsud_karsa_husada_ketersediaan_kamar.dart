@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/kesehatan/rsud_karsa_husada_detail_kamar.dart';
 import 'package:flutter_application_1/kesehatan/services/rsud_service.dart';
 
 class KamarRawatKarsa {
@@ -22,6 +21,7 @@ class KamarRawatKarsa {
     required this.terisi,
     required this.tersedia,
   });
+
   factory KamarRawatKarsa.fromJson(Map<String, dynamic> json) {
     final kapasitasTotal = json['kapasitas_total'] ?? 0;
     final kamarTersedia = json['kamar_tersedia'] ?? 0;
@@ -48,10 +48,22 @@ class RsudKarsaHusadaKetersediaanKamarPage extends StatefulWidget {
 }
 
 class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKetersediaanKamarPage> {
-  final RsudService _rsudService = RsudService();
   bool _isLoading = true;
   List<KamarRawatKarsa> _rooms = [];
   String _lastUpdated = '';
+
+  String _selectedGender = 'Semua';
+  List<String> _selectedKategori = ['Semua kategori'];
+  List<String> _selectedKelas = ['Semua kelas'];
+
+  List<KamarRawatKarsa> get _filteredRooms {
+    return _rooms.where((k) {
+      final matchGender = _selectedGender == 'Semua' || k.jenisKelamin == _selectedGender;
+      final matchKategori = _selectedKategori.contains('Semua kategori') || _selectedKategori.contains(k.kategori);
+      final matchKelas = _selectedKelas.contains('Semua kelas') || _selectedKelas.contains(k.kelas);
+      return matchGender && matchKategori && matchKelas;
+    }).toList();
+  }
   
   @override
   void initState() {
@@ -70,14 +82,55 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
 
   Future<void> _fetchRooms() async {
     setState(() => _isLoading = true);
-    // RSUD Karsa Husada uses the ID: karsa (or the UUID from database, we mapped 'karsa' in our demo script)
-    // Actually our previous script used 'karsa' in RsudController or gateway route.
-    final data = await _rsudService.fetchRooms('karsa');
-    if (mounted) {
-      setState(() {
-        _rooms = data.map((e) => KamarRawatKarsa.fromJson(e as Map<String, dynamic>)).toList();
-        _isLoading = false;
-      });
+    try {
+      final rsudService = RsudService();
+      final roomsData = await rsudService.fetchRooms('30000000-0000-0000-0000-000000000002'); // Karsa Husada
+
+      final List<KamarRawatKarsa> fetchedRooms = [];
+      for (var room in roomsData) {
+        String namaKelas = room['kelas_kamar']?.toString() ?? 'Unknown';
+        int kapasitas = room['kapasitas_total'] ?? 0;
+        int tersedia = room['kamar_tersedia'] ?? 0;
+        int terisi = kapasitas - tersedia;
+        
+        String status = 'Tersedia';
+        if (tersedia == 0) status = 'Penuh';
+        else if (tersedia <= 2) status = 'Terbatas';
+
+        // Dummy data for kategori and jenisKelamin for variety
+        String kategori = 'Reguler';
+        String jenisKelamin = 'Semua';
+        if (namaKelas.toLowerCase().contains('vip') || namaKelas.toLowerCase().contains('icu')) {
+          kategori = 'Intensif';
+        } else if (namaKelas == 'II' || namaKelas == 'I') {
+          kategori = 'Isolasi';
+          jenisKelamin = namaKelas == 'II' ? 'Perempuan' : 'Laki Laki';
+        }
+
+        fetchedRooms.add(KamarRawatKarsa(
+          nama: 'Kelas $namaKelas'.replaceAll('Kelas VIP', 'VIP').replaceAll('Kelas ICU', 'ICU'),
+          kategori: kategori,
+          status: status,
+          kelas: namaKelas,
+          jenisKelamin: jenisKelamin,
+          kapasitas: kapasitas,
+          terisi: terisi,
+          tersedia: tersedia,
+        ));
+      }
+
+      if (mounted) {
+        setState(() {
+          _rooms = fetchedRooms;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -90,7 +143,19 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return const _FilterModalContent();
+        return _FilterModalContent(
+          initialGender: _selectedGender,
+          initialMedis: _selectedKategori,
+          initialKelas: _selectedKelas,
+          availableKelas: _rooms.map((e) => e.kelas).toSet().toList(),
+          onApply: (gender, medis, kelas) {
+            setState(() {
+              _selectedGender = gender;
+              _selectedKategori = medis;
+              _selectedKelas = kelas;
+            });
+          },
+        );
       },
     );
   }
@@ -154,17 +219,11 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _buildSummaryBox(
-                      _rooms.fold(0, (sum, item) => sum + item.kapasitas).toString(),
-                      'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.kapasitas).toString(), 'Kapasitas', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
                   const SizedBox(width: 12),
-                  _buildSummaryBox(
-                      _rooms.fold(0, (sum, item) => sum + item.terisi).toString(),
-                      'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.terisi).toString(), 'Terisi', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
                   const SizedBox(width: 12),
-                  _buildSummaryBox(
-                      _rooms.fold(0, (sum, item) => sum + item.tersedia).toString(),
-                      'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
+                  _buildSummaryBox(_rooms.fold<int>(0, (p, e) => p + e.tersedia).toString(), 'Tersedia', const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
                 ],
               ),
               const SizedBox(height: 32),
@@ -189,43 +248,40 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
               ),
               const SizedBox(height: 12),
 
+
+
               // List of Rooms
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_rooms.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: Text('Tidak ada data kamar')),
-                )
-              else
-                ..._rooms.map((kamar) => _buildRoomCard(kamar)),
+              _isLoading 
+                ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
+                : _filteredRooms.isEmpty 
+                  ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada kamar tersedia')))
+                  : Column(
+                      children: _filteredRooms.map((kamar) => _buildRoomCard(kamar)).toList(),
+                    ),
               
               const SizedBox(height: 16),
               // Pagination Placeholder
-              if (!_isLoading && _rooms.isNotEmpty) ...[
+              if (!_isLoading && _filteredRooms.isNotEmpty)
                 Center(
-                  child: Text('Menampilkan 1-${_rooms.length} dari ${_rooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  child: Text('Menampilkan 1-${_filteredRooms.length} dari ${_filteredRooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
                 ),
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
-                  const SizedBox(width: 16),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
-                    child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
-                ],
-              ),
-              ],
+              if (!_isLoading && _filteredRooms.isNotEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.chevron_left, color: Color(0xFFD1D5DB)),
+                    const SizedBox(width: 16),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(color: Color(0xFF2979FF), shape: BoxShape.circle),
+                      child: const Center(child: Text('1', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.chevron_right, color: Color(0xFFD1D5DB)),
+                  ],
+                ),
               const SizedBox(height: 32),
             ],
           ),
@@ -324,7 +380,7 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('${kamar.kelas} • ${kamar.jenisKelamin}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  Text(kamar.jenisKelamin, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -356,25 +412,243 @@ class _RsudKarsaHusadaKetersediaanKamarPageState extends State<RsudKarsaHusadaKe
   }
 }
 
+class RsudKarsaHusadaDetailKamarPage extends StatelessWidget {
+  final KamarRawatKarsa kamar;
+
+  const RsudKarsaHusadaDetailKamarPage({
+    super.key,
+    required this.kamar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color badgeColor;
+    Color badgeBg;
+    Color statusColor;
+    Color statusBg;
+
+    // Set badge style
+    if (kamar.kategori == 'Isolasi') {
+      badgeColor = const Color(0xFF1E88E5);
+      badgeBg = const Color(0xFFE3F2FD);
+    } else if (kamar.kategori == 'Intensif') {
+      badgeColor = const Color(0xFFE53935);
+      badgeBg = const Color(0xFFFFEBEE);
+    } else {
+      badgeColor = const Color(0xFF43A047);
+      badgeBg = const Color(0xFFE8F5E9);
+    }
+
+    // Set status style
+    if (kamar.status == 'Tersedia') {
+      statusColor = const Color(0xFF43A047);
+      statusBg = const Color(0xFFF1F8E9);
+    } else if (kamar.status == 'Terbatas') {
+      statusColor = const Color(0xFFF57C00);
+      statusBg = const Color(0xFFFFF3E0);
+    } else {
+      statusColor = const Color(0xFFE53935);
+      statusBg = const Color(0xFFFFEBEE);
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2979FF),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Detail Kamar',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, size: 28),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Main Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(kamar.nama, style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(12)),
+                          child: Text(kamar.kategori, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: badgeColor)),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(12)),
+                          child: Text(kamar.status, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(kamar.jenisKelamin, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStatItem(kamar.kapasitas.toString(), 'Kapasitas'),
+                        Container(width: 1, height: 40, color: const Color(0xFFE5E7EB)),
+                        _buildStatItem(kamar.terisi.toString(), 'Terisi'),
+                        Container(width: 1, height: 40, color: const Color(0xFFE5E7EB)),
+                        _buildStatItem(kamar.tersedia.toString(), 'Tersedia'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Tarif
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Tarif', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 16),
+                    const Text('Tarif Per Hari', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                    const SizedBox(height: 4),
+                    const Text('Rp 500.000/malam', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 8),
+                    const Text('*Belum termasuk biaya tindakan & obat', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontStyle: FontStyle.italic, color: Color(0xFF9CA3AF))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Fasilitas
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Fasilitas', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 16),
+                    _buildFacilityItem('2 Tempat Tidur'),
+                    _buildFacilityItem('1 TV LED 24 Inci'),
+                    _buildFacilityItem('1 Sofa Panjang'),
+                    _buildFacilityItem('1 Pendingin Ruangan (AC)'),
+                    _buildFacilityItem('1 Toilet Duduk & Shower'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String count, String label) {
+    return Column(
+      children: [
+        Text(count, style: const TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+      ],
+    );
+  }
+
+  Widget _buildFacilityItem(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF6B7280)),
+            ),
+            child: const Icon(Icons.check, size: 10, color: Color(0xFF6B7280)),
+          ),
+          const SizedBox(width: 12),
+          Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF1A1A1A))),
+        ],
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────
 // Filter Modal Content
 // ─────────────────────────────────────────────
 class _FilterModalContent extends StatefulWidget {
-  const _FilterModalContent();
+  final String initialGender;
+  final List<String> initialMedis;
+  final List<String> initialKelas;
+  final List<String> availableKelas;
+  final void Function(String gender, List<String> medis, List<String> kelas) onApply;
+
+  const _FilterModalContent({
+    required this.initialGender,
+    required this.initialMedis,
+    required this.initialKelas,
+    required this.availableKelas,
+    required this.onApply,
+  });
 
   @override
   State<_FilterModalContent> createState() => _FilterModalContentState();
 }
 
 class _FilterModalContentState extends State<_FilterModalContent> {
-  String _selectedGender = 'Semua';
-  final List<String> _genders = ['Semua', 'Laki-laki', 'Perempuan'];
+  late String _selectedGender;
+  final List<String> _genders = ['Semua', 'Laki Laki', 'Perempuan'];
 
-  List<String> _selectedMedis = ['Semua kategori'];
+  late List<String> _selectedMedis;
   final List<String> _medisOptions = ['Semua kategori', 'Isolasi', 'Intensif', 'Reguler'];
 
-  List<String> _selectedKelas = ['Semua kelas'];
-  final List<String> _kelasOptions = ['Semua kelas', 'Kelas I', 'Kelas II', 'VIP', 'VVIP'];
+  late List<String> _selectedKelas;
+  late List<String> _kelasOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGender = widget.initialGender;
+    _selectedMedis = List.from(widget.initialMedis);
+    _selectedKelas = List.from(widget.initialKelas);
+    _kelasOptions = ['Semua kelas', ...widget.availableKelas];
+  }
 
   void _showResetDialog() {
     showDialog(
@@ -589,7 +863,10 @@ class _FilterModalContentState extends State<_FilterModalContent> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      widget.onApply(_selectedGender, _selectedMedis, _selectedKelas);
+                      Navigator.pop(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2979FF),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -606,3 +883,4 @@ class _FilterModalContentState extends State<_FilterModalContent> {
     );
   }
 }
+

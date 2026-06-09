@@ -9,6 +9,7 @@ import 'package:flutter_application_1/kesehatan/rsud_karsa_husada.dart';
 import 'package:flutter_application_1/kesehatan/rsud_daha_husada.dart';
 import 'package:flutter_application_1/widgets/floating_chatbot.dart';
 import 'package:flutter_application_1/account/visitorterdaftar.dart'; // for LayananItem and referensiLayanan
+import 'package:flutter_application_1/widgets/carousel_banner.dart';
 
 class VisitorHomePage extends StatefulWidget {
   const VisitorHomePage({super.key});
@@ -218,32 +219,23 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade200),
+                  GestureDetector(
+                    onTap: () => _showLoginPromptDialog(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: const Icon(Icons.notifications_none_outlined, size: 20),
                     ),
-                    child: const Icon(Icons.notifications_none_outlined, size: 20),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset('assets/welcome_image.png', fit: BoxFit.cover, height: 160, width: double.infinity,
-                errorBuilder: (_, _, _) => Container(
-                  height: 160, width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF66BB6A)]),
-                  ),
-                  child: const Center(child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 20))),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+            const CarouselBanner(),
+            const SizedBox(height: 10),
 
             // Login info banner
             Container(

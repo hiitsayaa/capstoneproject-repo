@@ -25,6 +25,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter_application_1/aktivitas/aktivitas_page.dart';
 import 'package:flutter_application_1/widgets/floating_chatbot.dart';
+import 'package:flutter_application_1/notifikasi/notifikasi_page.dart';
+import 'package:flutter_application_1/widgets/carousel_banner.dart';
 // Data model untuk layanan
 class LayananItem {
   final String id;
@@ -51,8 +53,8 @@ const List<LayananItem> referensiLayanan = [
   LayananItem(id: 'nomor_darurat', name: 'Nomor Darurat', subtitle: 'Nomor Darurat', icon: Icons.phone_in_talk, iconColor: Color(0xFFE53935), imageAsset: 'assets/logolayanan1.png'),
   LayananItem(id: 'point_jatim', name: 'Point Jatim', subtitle: 'Point Jatim', icon: Icons.stars, iconColor: Color(0xFF43A047), imageAsset: 'assets/logopointjatim.png'),
   LayananItem(id: 'skrining_tbc', name: 'Skrining E-Tibi', subtitle: 'Skrining E-Tibi', icon: Icons.medical_services, iconColor: Color(0xFF00897B), imageAsset: 'assets/logo_etibi.png'),
-  LayananItem(id: 'rsud_daha_husada', name: 'Rsud Daha Husada', subtitle: 'RSUD Daha Husada', icon: Icons.local_hospital, iconColor: Color(0xFF1E88E5), imageAsset: 'assets/logo_rsud_daha.png'),
-  LayananItem(id: 'rsud_haji', name: 'Rsud Haji Prov. Jatim', subtitle: 'RSUD Haji Prov. Jatim', icon: Icons.health_and_safety, iconColor: Color(0xFF43A047), imageAsset: 'assets/logo_rsud_haji.png'),
+  LayananItem(id: 'rsud_daha_husada', name: 'RSUD Daha Husada', subtitle: 'RSUD Daha Husada', icon: Icons.local_hospital, iconColor: Color(0xFF1E88E5), imageAsset: 'assets/logo_rsud_daha.png'),
+  LayananItem(id: 'rsud_haji', name: 'RSUD Haji Prov. Jatim', subtitle: 'RSUD Haji Prov. Jatim', icon: Icons.health_and_safety, iconColor: Color(0xFF43A047), imageAsset: 'assets/logo_rsud_haji.png'),
   LayananItem(id: 'rsud_karsa_husada', name: 'RSUD Karsa Husada', subtitle: 'RSUD Karsa Husada', icon: Icons.local_hospital, iconColor: Color(0xFF5E35B1), imageAsset: 'assets/logo_rsud_karsa.png'),
   LayananItem(id: 'sapa_bansos', name: 'Sapa Bansos', subtitle: 'SAPA BANSOS', icon: Icons.volunteer_activism, iconColor: Color(0xFFFF6F00), imageAsset: 'assets/logolayanan1.png'),
   LayananItem(id: 'islamic_center', name: 'Islamic Center', subtitle: 'Islamic Center', icon: Icons.mosque, iconColor: Color(0xFF00897B), imageAsset: 'assets/logo_islamic_center.png'),
@@ -349,41 +351,26 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade200),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiPage()));
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: const Icon(Icons.notifications_none_outlined, size: 20),
                         ),
-                        child: const Icon(Icons.notifications_none_outlined, size: 20),
                       ),
                     ],),
               ),
               const SizedBox(height: 16),
 
               // Banner
-              InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Banner diklik! (Fitur promosi segera hadir)', style: TextStyle(fontFamily: 'Poppins'))),
-                  );
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset('assets/welcome_image.png', fit: BoxFit.cover, height: 160, width: double.infinity,
-                    errorBuilder: (_, _, _) => Container(
-                      height: 160, width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF66BB6A)]),
-                      ),
-                      child: const Center(child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 20))),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
+              const CarouselBanner(),
+              const SizedBox(height: 10),
 
               // Layanan Favorit
               Row(

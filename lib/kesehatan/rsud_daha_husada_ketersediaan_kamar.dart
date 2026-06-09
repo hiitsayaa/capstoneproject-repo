@@ -48,10 +48,22 @@ class RsudDahaHusadaKetersediaanKamarPage extends StatefulWidget {
 }
 
 class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKetersediaanKamarPage> {
-  final RsudService _rsudService = RsudService();
   bool _isLoading = true;
   List<KamarRawatDaha> _rooms = [];
   String _lastUpdated = '';
+
+  String _selectedGender = 'Semua';
+  List<String> _selectedKategori = ['Semua kategori'];
+  List<String> _selectedKelas = ['Semua kelas'];
+
+  List<KamarRawatDaha> get _filteredRooms {
+    return _rooms.where((k) {
+      final matchGender = _selectedGender == 'Semua' || k.jenisKelamin == _selectedGender;
+      final matchKategori = _selectedKategori.contains('Semua kategori') || _selectedKategori.contains(k.kategori);
+      final matchKelas = _selectedKelas.contains('Semua kelas') || _selectedKelas.contains(k.kelas);
+      return matchGender && matchKategori && matchKelas;
+    }).toList();
+  }
   
   @override
   void initState() {
@@ -70,12 +82,55 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
 
   Future<void> _fetchRooms() async {
     setState(() => _isLoading = true);
-    final data = await _rsudService.fetchRooms('daha');
-    if (mounted) {
-      setState(() {
-        _rooms = data.map((e) => KamarRawatDaha.fromJson(e as Map<String, dynamic>)).toList();
-        _isLoading = false;
-      });
+    try {
+      final rsudService = RsudService();
+      final roomsData = await rsudService.fetchRooms('30000000-0000-0000-0000-000000000001'); // Daha Husada
+
+      final List<KamarRawatDaha> fetchedRooms = [];
+      for (var room in roomsData) {
+        String namaKelas = room['kelas_kamar']?.toString() ?? 'Unknown';
+        int kapasitas = room['kapasitas_total'] ?? 0;
+        int tersedia = room['kamar_tersedia'] ?? 0;
+        int terisi = kapasitas - tersedia;
+        
+        String status = 'Tersedia';
+        if (tersedia == 0) status = 'Penuh';
+        else if (tersedia <= 2) status = 'Terbatas';
+
+        // Dummy data for kategori and jenisKelamin for variety
+        String kategori = 'Reguler';
+        String jenisKelamin = 'Semua';
+        if (namaKelas.toLowerCase().contains('vip') || namaKelas.toLowerCase().contains('icu')) {
+          kategori = 'Intensif';
+        } else if (namaKelas == 'II' || namaKelas == 'I') {
+          kategori = 'Isolasi';
+          jenisKelamin = namaKelas == 'II' ? 'Perempuan' : 'Laki Laki';
+        }
+
+        fetchedRooms.add(KamarRawatDaha(
+          nama: 'Kelas $namaKelas'.replaceAll('Kelas VIP', 'VIP').replaceAll('Kelas ICU', 'ICU'),
+          kategori: kategori,
+          status: status,
+          kelas: namaKelas,
+          jenisKelamin: jenisKelamin,
+          kapasitas: kapasitas,
+          terisi: terisi,
+          tersedia: tersedia,
+        ));
+      }
+
+      if (mounted) {
+        setState(() {
+          _rooms = fetchedRooms;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -88,7 +143,19 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return const _FilterModalContent();
+        return _FilterModalContent(
+          initialGender: _selectedGender,
+          initialMedis: _selectedKategori,
+          initialKelas: _selectedKelas,
+          availableKelas: _rooms.map((e) => e.kelas).toSet().toList(),
+          onApply: (gender, medis, kelas) {
+            setState(() {
+              _selectedGender = gender;
+              _selectedKategori = medis;
+              _selectedKelas = kelas;
+            });
+          },
+        );
       },
     );
   }
@@ -181,23 +248,25 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
               ),
               const SizedBox(height: 12),
 
+
+
               // List of Rooms
               _isLoading 
                 ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
-                : _rooms.isEmpty 
+                : _filteredRooms.isEmpty 
                   ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada kamar tersedia')))
                   : Column(
-                      children: _rooms.map((kamar) => _buildRoomCard(kamar)).toList(),
+                      children: _filteredRooms.map((kamar) => _buildRoomCard(kamar)).toList(),
                     ),
               
               const SizedBox(height: 16),
               // Pagination Placeholder
-              if (!_isLoading && _rooms.isNotEmpty)
+              if (!_isLoading && _filteredRooms.isNotEmpty)
                 Center(
-                  child: Text('Menampilkan 1-${_rooms.length} dari ${_rooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  child: Text('Menampilkan 1-${_filteredRooms.length} dari ${_filteredRooms.length} hasil', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
                 ),
               const SizedBox(height: 8),
-              if (!_isLoading && _rooms.isNotEmpty)
+              if (!_isLoading && _filteredRooms.isNotEmpty)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -311,7 +380,7 @@ class _RsudDahaHusadaKetersediaanKamarPageState extends State<RsudDahaHusadaKete
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('${kamar.kelas} • ${kamar.jenisKelamin}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
+                  Text(kamar.jenisKelamin, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF6B7280))),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -440,7 +509,7 @@ class RsudDahaHusadaDetailKamarPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text('${kamar.kelas} • ${kamar.jenisKelamin}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
+                    Text(kamar.jenisKelamin, style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF6B7280))),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -544,21 +613,42 @@ class RsudDahaHusadaDetailKamarPage extends StatelessWidget {
 // Filter Modal Content
 // ─────────────────────────────────────────────
 class _FilterModalContent extends StatefulWidget {
-  const _FilterModalContent();
+  final String initialGender;
+  final List<String> initialMedis;
+  final List<String> initialKelas;
+  final List<String> availableKelas;
+  final void Function(String gender, List<String> medis, List<String> kelas) onApply;
+
+  const _FilterModalContent({
+    required this.initialGender,
+    required this.initialMedis,
+    required this.initialKelas,
+    required this.availableKelas,
+    required this.onApply,
+  });
 
   @override
   State<_FilterModalContent> createState() => _FilterModalContentState();
 }
 
 class _FilterModalContentState extends State<_FilterModalContent> {
-  String _selectedGender = 'Semua';
-  final List<String> _genders = ['Semua', 'Laki-laki', 'Perempuan'];
+  late String _selectedGender;
+  final List<String> _genders = ['Semua', 'Laki Laki', 'Perempuan'];
 
-  List<String> _selectedMedis = ['Semua kategori'];
+  late List<String> _selectedMedis;
   final List<String> _medisOptions = ['Semua kategori', 'Isolasi', 'Intensif', 'Reguler'];
 
-  List<String> _selectedKelas = ['Semua kelas'];
-  final List<String> _kelasOptions = ['Semua kelas', 'Kelas I', 'Kelas II', 'VIP', 'VVIP'];
+  late List<String> _selectedKelas;
+  late List<String> _kelasOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGender = widget.initialGender;
+    _selectedMedis = List.from(widget.initialMedis);
+    _selectedKelas = List.from(widget.initialKelas);
+    _kelasOptions = ['Semua kelas', ...widget.availableKelas];
+  }
 
   void _showResetDialog() {
     showDialog(
@@ -773,7 +863,10 @@ class _FilterModalContentState extends State<_FilterModalContent> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      widget.onApply(_selectedGender, _selectedMedis, _selectedKelas);
+                      Navigator.pop(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2979FF),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
