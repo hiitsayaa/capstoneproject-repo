@@ -83,14 +83,22 @@ class _KelolaFavoritPageState extends State<KelolaFavoritPage> {
                             width: 68,
                             child: Column(
                               children: [
-                                Container(
-                                  width: 48, height: 48,
-                                  decoration: BoxDecoration(
-                                    color: item.iconColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(item.icon, color: item.iconColor, size: 24),
-                                ),
+                                item.imageAsset.isNotEmpty
+                                    ? Container(
+                                        width: 48, height: 48,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Image.asset(item.imageAsset, fit: BoxFit.contain),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 48, height: 48,
+                                        decoration: BoxDecoration(
+                                          color: item.iconColor.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(item.icon, color: item.iconColor, size: 24),
+                                      ),
                                 const SizedBox(height: 4),
                                 Text(item.name, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontFamily: 'Poppins', fontSize: 8, fontWeight: FontWeight.w500)),

@@ -7,10 +7,15 @@ import 'package:flutter_application_1/auth/views/login_view.dart';
 import 'package:flutter_application_1/auth/controllers/auth_controller.dart';
 import 'package:flutter_application_1/account/visitorterdaftar.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 void main() async {
   // Menahan Splash Screen asli sampai Flutter siap
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
   
   runApp(const MyApp());
 }

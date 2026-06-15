@@ -322,7 +322,7 @@ class _VisitorTerdaftarPageState extends State<VisitorTerdaftarPage> {
             const SizedBox(height: 16),
               // Header
               InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountPage())),
+                onTap: () => _onTabTapped(3),
                 child: Row(
                     children: [
                       const CircleAvatar(
